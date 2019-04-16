@@ -30,6 +30,10 @@ NumberGenerator::NumberGenerator(int lowerBoundIn, int upperBoundIn) {
 	this->stdX = 0;
 	this->stdY = 0;
 	this->stdZ = 0;
+
+	this->rmsX = 0;
+	this->rmsY = 0;
+	this->rmsZ = 0;
 }
 
 //This method fills in the vectors in the instance level with values acquired by
@@ -92,6 +96,7 @@ float NumberGenerator::generateRandomFloatInRange()
 
 void NumberGenerator::computeMeanVarAllAxes()
 {
+
 	this->meanX = this->computeMeanVector(this->bufferX);
 	this->meanY = this->computeMeanVector(this->bufferY);
 	this->meanZ = this->computeMeanVector(this->bufferZ);
@@ -99,10 +104,17 @@ void NumberGenerator::computeMeanVarAllAxes()
 	this->stdX = computeSTDVector(this->bufferX, meanX);
 	this->stdY = computeSTDVector(this->bufferX, meanX);
 	this->stdZ = computeSTDVector(this->bufferX, meanX);
+
+	this->rmsX = computeRMS(this->bufferX);
+	this->rmsX = computeRMS(this->bufferY);
+	this->rmsX = computeRMS(this->bufferZ);
+
+
 }
 
 float NumberGenerator::computeMeanVector(vector<float> inputVec)
 {
+	//cout << "MEAN" << inputVec.front() << endl;
 	int amountElements = inputVec.size();
 	float sumElements = std::accumulate(inputVec.begin(), inputVec.end(), 0);
 	return sumElements / amountElements;
@@ -110,7 +122,7 @@ float NumberGenerator::computeMeanVector(vector<float> inputVec)
 
 float NumberGenerator::computeSTDVector(vector<float> inputVec, float mean)
 {
-
+	//cout << "STD" << inputVec.front() << endl;
 	//vectorial operation, need to subtract each element by the mean (in place)
 	std::transform(inputVec.begin(), inputVec.end(), inputVec.begin(),
 	          bind2nd(std::minus<float>(), mean));
@@ -125,7 +137,22 @@ float NumberGenerator::computeSTDVector(vector<float> inputVec, float mean)
 	return sqrtf(divElements);
 }
 
+float NumberGenerator::computeRMS(vector<float> inputVec)
+{
+	//cout << "RMS" << inputVec.front() << endl;
+	//need to compute the square root of every single input element in the vector.
+    std::transform(inputVec.begin(), inputVec.end(), inputVec.begin(), [](int x){return x*x;});
 
+    //now need to sum all the elements
+	float sumElements = std::accumulate(inputVec.begin(), inputVec.end(), 0);
+
+	//and need to divide by the amount of elements
+	float divElements = sumElements / inputVec.size();
+
+	//and finally perform the square root and return that
+	return sqrtf(divElements);
+
+}
 
 
 NumberGenerator::~NumberGenerator() {

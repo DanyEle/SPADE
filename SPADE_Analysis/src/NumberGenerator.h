@@ -24,6 +24,8 @@ private:
 	float generateRandomFloatInRange();
 	float computeMeanVector(vector<float> inputVec);
 	float computeSTDVector(vector<float> inputVec, float mean);
+	float computeRMS(vector<float> inputVec);
+
 
 	int lowerBound;
 	int upperBound;
@@ -35,6 +37,10 @@ private:
 	float stdX;
 	float stdY;
 	float stdZ;
+
+	float rmsX;
+	float rmsY;
+	float rmsZ;
 
 	vector<float> bufferX;
 	vector<float> bufferY;

@@ -1,0 +1,2 @@
+1. Install latest version of Matlab
+2. Install signal processing Toolbox

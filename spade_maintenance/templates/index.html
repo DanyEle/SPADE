@@ -1,0 +1,78 @@
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+
+    <!-- Bootstrap CSS -->
+
+      <script src="https://cdn.plot.ly/plotly-1.2.0.min.js"></script>
+
+
+    <title> SPADE 1.0 - predictive </title>
+  </head>
+  <body>
+
+    <h1>SPADE 1.0 - Predictive Maintenance tool</h1>
+
+    <h2> Sensing, Processing and Analyzing Data in an Embedded IoT device</h2>
+
+    <h3>Current machine status:</h3>
+
+    <hr>
+
+     <div id="machinePlot" style="width:1200px;height:800px;"></div>
+    <hr>
+
+     <script>
+
+        //Daniele: need to pre-process the timestamps and remove the ' from them.
+
+                 var timestamps_fixed = []
+                //pre-process all the run names so as to remove the unicode characters
+                //that cause problems in rendering plots' labels over the X axis
+                //and turn them into strings again
+                {% for timestamp in timestamps%}
+                    timestamps_fixed.push('{{ timestamp }}');
+                {%  endfor %}
+
+                 var line_1_plot =  {
+                        x: timestamps_fixed,
+                        y: {{ distances }},
+                        type: 'line',
+                        marker: {
+                            color: 'rgb(0, 128, 0)'
+                        }
+                    }
+
+
+                  var line_2_plot = {
+                        x: timestamps_fixed,
+                        y: {{ thresholds }},
+                        type: 'line',
+                        marker: {
+                            color: 'rgb(128, 0, 0)'
+                        }
+                    }
+
+                var data = [line_1_plot,line_2_plot];
+
+
+                  var layout_machine_plot = {
+                    title: 'Current Machine status:',
+                    xaxis: {
+                        title: 'Time',
+                    },
+                    yaxis: {
+                        title: 'Mahalanobis Distance',
+                        range: [-100, 300]
+                    }
+
+                };
+
+                Plotly.newPlot('machinePlot', data, layout_machine_plot);
+
+    </script>
+
+
+  </body>
+</html>

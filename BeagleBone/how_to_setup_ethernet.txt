@@ -1,0 +1,18 @@
+1. Connect Beagle to an active Ethernet port via an ethernet cable
+2. Connect to the Beagleboard via SSh
+3. Get the ID of the ethernet interface as:
+
+commanctl
+services
+
+EX: In my case: ethernet_74e1829fe229_cable
+
+4. Run the following command to set a static IP address
+
+sudo connmanctl config <service> --ipv4 manual <ip_addr> <netmask> <gateway> --nameservers <dns_server>
+
+5. Restart the network interface:
+
+sudo ifconfig eth0 down
+sudo ifconfig eth0 up
+5. If everything went well, you will now be able to access the internet!

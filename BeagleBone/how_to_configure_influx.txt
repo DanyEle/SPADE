@@ -1,0 +1,20 @@
+How to install InfluxDB:
+
+sudo apt install policykit-1
+
+2.Follow instructions about installting influxDB.
+
+https://www.vincenzov.net/taccuino/RaspberryPI/influxdb-grafana.htm
+
+Start influx:
+
+sudo influxd run -config /etc/influxdb/influxdb.conf
+
+
+In order to start influx:
+
+sudo influxd run -config /etc/influxdb/influxdb.conf 
+
+
+
+

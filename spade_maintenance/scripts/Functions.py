@@ -5,6 +5,8 @@ import numpy as np
 import requests
 import re
 import dateutil.parser
+from sklearn.model_selection import train_test_split
+
 
 
 def load_data_in_data_frame():
@@ -30,7 +32,7 @@ def load_data_in_data_frame():
     return(merged_data)
 
 
-def holdout_data(merged_data):
+def holdout_dummy_data(merged_data):
     dataset_train = merged_data['2004-02-12 11:02:39':'2004-02-13 23:52:39']
     dataset_test = merged_data['2004-02-13 23:52:39':]
 
@@ -48,6 +50,22 @@ def holdout_data(merged_data):
     
     
     return(X_train, X_test)
+    
+    
+def preprocess_BB_data(data_frame_loaded):
+    
+    scaler = preprocessing.MinMaxScaler()
+
+    X_data = pd.DataFrame(scaler.fit_transform(data_frame_loaded),
+                           columns=data_frame_loaded.columns,
+                           index=data_frame_loaded.index) 
+    
+    #Randomly shuffle the data
+    X_data.sample(frac=1)
+
+    
+    return(X_data)
+    
     
 #Input: beagleboard's IP and port where InfluxDB is running
 #Output: ALL the data points the beagle board has accumulated so far
@@ -73,10 +91,12 @@ def get_data_frame_from_BB(beagle_ip, beagle_port):
     data_frame = pd.DataFrame(list_data_points, columns=["Timestamp", "X", "Y", "Z"])
     
     column_ts = parse_timestamps_column(data_frame["Timestamp"] )
-    #Notice that now the timestamp is the index!
+    #Notice that now that the timestamps go at the index!
     data_frame.index = column_ts
-    data_frame.drop(columns=["Timestamp"])
+    data_frame.drop(columns=["Timestamp"], inplace=True)
     del data_frame.index.name
+    
+    print("Fetched " + str(len(data_frame["X"])) + " data points from the BB")
     
     return(data_frame)
     

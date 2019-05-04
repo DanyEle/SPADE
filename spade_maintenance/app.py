@@ -8,6 +8,8 @@ from datetime import timedelta
 import matplotlib.pyplot as plt
 %matplotlib inline
 
+
+
 import requests
 
 
@@ -44,7 +46,7 @@ data_PCA = {}
 #    #distance to the non-anomalous data
 #    # and classify the test points as an “anomaly”
 #    # if the distance is above a certain threshold.
-#    X_train, X_test = holdout_data(merged_data)
+#    X_train, X_test = holdout_dummy_data(merged_data)
 #    
 #    X_train_PCA, X_test_PCA = preprocess_data_pca(X_train, X_test)
 #    
@@ -65,6 +67,21 @@ data_PCA = {}
 #    data_PCA["Anomaly"] = anomaly_all_data_PCA["Anomaly"]
 #    data_PCA["Timestamps"] = anomaly_all_data_PCA["Timestamps"]
 
+#Remember for displaying with flask:
+#anomaly["Timestamps"] = X_test_PCA.index
+
+
+#X_data_PCA = X_train_PCA or X_test_PCA
+def find_anomaly_threshold_PCA(data_train, mean_distr):
+    #compute covariance matrix
+    covariance_matrix, inv_cov_matrix = cov_matrix(data_train)
+    #calculate the Mahalanobis distance for the training data defining “normal conditions”,
+    #and find the threshold value to flag datapoints as an anomaly.
+    dist_data = MahalanobisDist(inv_cov_matrix, mean_distr, data_train, verbose=False)
+    anomaly_threshold = MD_threshold(dist_data, extreme=True)
+    
+    return anomaly_threshold, dist_data, inv_cov_matrix
+
 
 
 def main_PCA():
@@ -73,55 +90,132 @@ def main_PCA():
     train_display_plot_PCA_plt(merged_data)
 
 
-def train_display_plot_PCA_plt(merged_data):
+def train_PCA_dummy(merged_data):
     #merged_data = load_data_in_data_frame()
-    X_train, X_test = holdout_data(merged_data)
-    #There's much more test data actually
-    X_train_PCA, X_test_PCA = preprocess_data_pca(X_train, X_test)
+    X_train, X_test = holdout_dummy_data(merged_data)
     
+    X_train_PCA, X_test_PCA = preprocess_data_pca(X_train, X_test)
+    data_train =  np.array(X_train_PCA.values)
+    
+    mean_distr = train.mean(axis=0)
     #ADVANTAGE of PCA: the threshold is identified automatically by the algorithm.
     #Assuming that the data follows a Chi^2 distribution if the assumption of normal distribution is fullfilled
-    anomaly_all_data_PCA = train_PCA_model(X_train_PCA, X_test_PCA, matplotlib=True)
-    plot_anomaly = anomaly_all_data_PCA.plot(logy=True, figsize = (10,6), ylim = [1e-1,1e3], color = ['green','red'])
+    anomaly_threshold_train, dist_train, inv_cov_matrix = find_anomaly_threshold_PCA(data_train, mean_distr)
+    
+    #Visualize the square of the Mahalanobis distance
+    plot_mahab_distance_square(dist_train)
+    #Visualize the mahalanobis distance itself
+    plot_mahab_distance(dist_train)
+    
+    data_test = np.array(X_test_PCA.values)
+
+    #Just plot the test dataset
+    anomaly_test_PCA = pd.DataFrame()
+    anomaly_test_PCA['Mob dist'] = dist_test #Distance of the test dataset from the training one. 
+    anomaly_test_PCA['Thresh'] = anomaly_threshold_train
+    
+    #Assign flags, marking data as anomalous or not anomalous
+    # If Mob dist above threshold: Flag as anomaly.
+    anomaly_test_PCA['Anomaly'] = anomaly_test_PCA['Mob dist'] > anomaly_test_PCA['Thresh']
+    anomaly_test_PCA.index = X_test_PCA.index
+    
+    plot_anomaly = anomaly_test_PCA.plot(logy=True, figsize = (10,6), ylim = [1e-1,1e3], color = ['green','red'])
 
 
-
+def autoencoder_find_anomaly_threshold(X_data):
+    #first thing first, let's initialize the data that we will be needing to generate the autoencoder model
+    autoencoder_model = create_autoencoder(X_data)
+    trained_model, history = train_model(autoencoder_model, X_data, batch_size=1, num_epochs=100)
+    #Let's see how the loss function evolved during the training process.
+    show_training_history_loss_plot(history)   
+    #And let's see where a good threshold may lie at by inspecting the loss of the training set. 
+    show_loss_distr_training_set(X_data, trained_model)
+    anomaly_threshold = find_loss_threshold_value(X_data, trained_model)
+    
+    return anomaly_threshold, trained_model  
+  
 
 def main_autoencoder_dummy():
     #data frame with indexes having the data/time and one column per axis
-    merged_data = load_data_in_data_frame()
-    train_display_plot_Autoencoder_plt(merged_data)
-
-
-
-def train_display_plot_Autoencoder_plt_dummy(merged_data):
-    X_train, X_test = holdout_data(merged_data)
+    merged_data = load_data_in_data_frame()    
+    X_train, X_test = holdout_dummy_data(merged_data)
+    #train_display_plot_autoencoder(X_train, X_test)
+    anomaly_threshold, trained_model = autoencoder_find_anomaly_threshold(X_train)
     
-    #first thing first, let's initialize the data that we will be needing to generate the autoencoder model
-    autoencoder_model = create_autoencoder(X_train)
+    if(anomaly_threshold == False):
+        print("No outliers have been identified in the sample provided")
+        return
     
-    trained_model, history = train_model(autoencoder_model, X_train, batch_size=10, num_epochs=100)
-
-    #Let's see how the loss function evolved during the training process.
-    show_training_history_loss_plot(history)   
-    
-    #And let's see where a good threshold may lie at by inspecting the loss of the training set. 
-    show_loss_distr_training_set(X_train, trained_model)
-    
-    anomaly_threshold = find_loss_threshold_value(X_train, trained_model)
-    
-    test_scored_anom = mark_data_frame_as_anomaly(X_test, trained_model, threshold_value)
-    
-    train_scored_anom = mark_data_frame_as_anomaly(X_train, trained_model, threshold_value)
-    
+    print("Anomalous Threshold identified (Z-Test)" + str(anomaly_threshold))
+    test_scored_anom = mark_data_frame_as_anomaly(X_test, trained_model, anomaly_threshold)
+    train_scored_anom = mark_data_frame_as_anomaly(X_train, trained_model, anomaly_threshold)
     scored = pd.concat([train_scored_anom, test_scored_anom])
     #Loss Mae = Mean Absolute Error. 
     scored.plot(logy=True,  figsize = (10,6), ylim = [1e-2,1e2], color = ['blue','red'])    
     
+    
+#Input: None
+#Output: the trained model based on all the data present in the BB.
+def train_autoencoder_BB():
+    
+    data_frame_loaded = get_data_frame_from_BB(BEAGLE_IP, BEAGLE_PORT)
+    
+    X_data = preprocess_BB_data(data_frame_loaded) 
+        
+    anomaly_threshold, trained_model = autoencoder_find_anomaly_threshold(X_train)
+    
+    anomaly_threshold = 0.2
+    #Let's mark the data points 
+    #if(anomaly_threshold == False):
+    #    print("No outliers have been identified in the sample provided")
+    #    return
+    print("Anomalous Threshold identified (Z-Test)" + str(anomaly_threshold))
+    
+    data_scored_anom = mark_data_frame_as_anomaly(X_data, trained_model, anomaly_threshold)
+    
+    data_scored_anom.plot(logy=True,  figsize = (10,6), ylim = [1e-2,1e2], color = ['blue','red'])    
 
     
-def main_autoencoder_real_BB():
-    data_frame_loaded = fetch_data_from_BB(BEAGLE_IP, BEAGLE_PORT)
+    
+def train_PCA_BB():
+    
+    data_frame_loaded = get_data_frame_from_BB(BEAGLE_IP, BEAGLE_PORT)
+    
+    X_data = preprocess_BB_data(data_frame_loaded) 
+    
+    X_train, X_test = train_test_split(X_data, test_size=0.4)
+       
+    X_train_PCA, X_test_PCA = preprocess_data_pca(X_train, X_test)
+    data_train =  np.array(X_train_PCA.values)
+    
+    mean_distr = data_train.mean(axis=0)
+    #The threshold is identified automatically by the algorithm.
+    #Assuming that the data follows a Chi^2 distribution if the assumption of normal distribution is fullfilled
+    anomaly_threshold_train, dist_train, inv_cov_matrix = find_anomaly_threshold_PCA(data_train, mean_distr)
+    
+    #Visualize the square of the Mahalanobis distance
+    plot_mahab_distance_square(dist_train)
+    #Visualize the mahalanobis distance itself
+    plot_mahab_distance(dist_train)
+    
+    
+    data_test = np.array(X_test_PCA.values)
+    dist_test = MahalanobisDist(inv_cov_matrix, mean_distr, data_test, verbose=False)
+    #Just plot the test dataset
+    anomaly_test_PCA = pd.DataFrame()
+    anomaly_test_PCA['Mob dist'] = dist_test #Distance of the test dataset from the training one. 
+    anomaly_test_PCA['Thresh'] = anomaly_threshold_train
+    
+    #Assign flags, marking data as anomalous or not anomalous
+    # If Mob dist above threshold: Flag as anomaly.
+    anomaly_test_PCA['Anomaly'] = anomaly_test_PCA['Mob dist'] > anomaly_test_PCA['Thresh']
+    anomaly_test_PCA.index = X_test_PCA.index
+    
+    plot_anomaly = anomaly_test_PCA.plot(logy=True, figsize = (10,6), ylim = [1e-1,1e3], color = ['green','red'])
+
+    
+    
+        
     
     
     

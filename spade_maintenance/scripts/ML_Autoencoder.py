@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import numpy as np
 from sklearn import preprocessing
@@ -6,6 +7,7 @@ sns.set(color_codes=True)
 import matplotlib.pyplot as plt
 #%matplotlib inline
 
+from numpy.random import seed
 from tensorflow import set_random_seed
 
 from keras.layers import Input, Dropout
@@ -15,6 +17,7 @@ from keras import regularizers
 from keras.models import model_from_json
 
 #Let's define the autoencoder model.
+
 
 
 def create_autoencoder(X_train):
@@ -60,7 +63,7 @@ def train_model(model, X_train, batch_size, num_epochs):
 
 
 
-def show_training_history_loss_plot(histsklearnory):
+def show_training_history_loss_plot(history):
     plt.plot(history.history['loss'],
              'b',
              label='Training loss')
@@ -101,8 +104,7 @@ def show_loss_distr_training_set(X_train, model):
 #that are considered outliers. 
 def find_loss_threshold_value(X_train, model):
     X_pred = model.predict(np.array(X_train))
-    X_pred = pd.DataFrame(X_pred, 
-                          columns=X_train.columns)
+    X_pred = pd.DataFrame(X_pred, columns=X_train.columns)
     X_pred.index = X_train.index
     
     scored = pd.DataFrame(index=X_train.index)
@@ -122,9 +124,13 @@ def find_loss_threshold_value(X_train, model):
         z_score= (y - mean_1)/std_1 
         if np.abs(z_score) > threshold:
             outliers.append(y)
-    
-    #Now let's take the mean of all outliers
-    anomaly_threshold = np.mean(outliers)
+            
+            
+    if(len(outliers) == 0):
+        anomaly_threshold=False
+    else:
+        #Now let's take the mean of all outliers
+        anomaly_threshold = np.mean(outliers)
 
     return(anomaly_threshold)    
     

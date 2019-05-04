@@ -73,37 +73,23 @@ def cov_matrix(data, verbose=False):
     else:
         print("Error: Covariance Matrix is not positive definite!")
 
-def train_PCA_model(X_train_PCA, X_test_PCA, matplotlib=True):
-    #Daniele: train on the normal operating conditions
-    data_train = np.array(X_train_PCA.values)
-    data_test = np.array(X_test_PCA.values)
-    #compute covariance matrix
-    covariance_matrix, inv_cov_matrix = cov_matrix(data_train)
-    mean_distr = data_train.mean(axis=0)
 
-    #calculate the Mahalanobis distance for the training data defining “normal conditions”,
-    #and find the threshold value to flag datapoints as an anomaly.
-    dist_test = MahalanobisDist(inv_cov_matrix, mean_distr, data_test, verbose=False)
-    dist_train = MahalanobisDist(inv_cov_matrix, mean_distr, data_train, verbose=False)
-    threshold = MD_threshold(dist_train, extreme=True)
-
-
-    anomaly = pd.DataFrame()
-    anomaly['Mob dist'] = dist_test
-    anomaly['Thresh'] = threshold
-    #Assign flags, marking data as anomalous or not anomalous
-    # If Mob dist above threshold: Flag as anomaly.
-    anomaly['Anomaly'] = anomaly['Mob dist'] > anomaly['Thresh']
+def plot_mahab_distance_square(dist_train):
+    plt.figure()
+    sns.distplot(np.square(dist_train),
+                 bins = 10, 
+                 kde= False);
+    plt.xlim([0.0,15])
     
-    if(matplotlib == True):
-        anomaly.index = X_test_PCA.index
-    #Else, this line is just for displaying data in flask-compatible format actually
-    else:
-        anomaly["Timestamps"] = X_test_PCA.index
-        
-    return anomaly
-
-
+    
+def plot_mahab_distance(dist_train):
+    plt.figure()
+    sns.distplot(dist_train,
+                 bins = 10, 
+                 kde= True, 
+                color = 'green');
+    plt.xlim([0.0,5])
+    plt.xlabel('Mahalanobis dist')
 
 
 

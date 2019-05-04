@@ -51,12 +51,12 @@ def create_autoencoder(X_train):
     # Train model for 100 epochs, batch size of 10:
 
 
-def train_model(model, X_train, batch_size, num_epochs):
+def train_model(model, X_train, batch_size, num_epochs, valid_split):
     
     history=model.fit(np.array(X_train),np.array(X_train),
                       batch_size=batch_size,
                       epochs=num_epochs,
-                      validation_split=0.05, #5% of training samples used for validation
+                      validation_split=valid_split, #5% of training samples used for validation
                       verbose = 1)
     
     return(model, history)
@@ -102,7 +102,7 @@ def show_loss_distr_training_set(X_train, model):
 #Values outside this distribution are outliers.
 #To find out the threshold, we take the mean value of all data points
 #that are considered outliers. 
-def find_loss_threshold_value(X_train, model):
+def find_loss_threshold_value(X_train, model, extreme=False):
     X_pred = model.predict(np.array(X_train))
     X_pred = pd.DataFrame(X_pred, columns=X_train.columns)
     X_pred.index = X_train.index
@@ -114,15 +114,14 @@ def find_loss_threshold_value(X_train, model):
     mean_1 = scored['Loss_mae'].mean()
     std_1 = scored['Loss_mae'].std() 
     
-    threshold=3
+    k = 3 if extreme else 2
     
     outliers=[]
-    
     #Firstly, find all data points that are outliers based on the Z-Test
     #(i.e.: all the values that are outside 3*standard deviation)
     for y in scored['Loss_mae']:
         z_score= (y - mean_1)/std_1 
-        if np.abs(z_score) > threshold:
+        if np.abs(z_score) > k:
             outliers.append(y)
             
             
@@ -148,6 +147,20 @@ def mark_data_frame_as_anomaly(X_data, model, threshold_value):
     scored['Anomaly'] = scored['Loss_mae'] > scored['Threshold']
     
     return(scored)
+    
+    
+def autoencoder_find_anomaly_threshold(X_data):
+    #first thing first, let's initialize the data that we will be needing to generate the autoencoder model
+    autoencoder_model = create_autoencoder(X_data)
+    trained_model, history = train_model(autoencoder_model, X_data, batch_size=1, num_epochs=100, valid_split=0.2) #0.05
+    #Let's see how the loss function evolved during the training process.
+    show_training_history_loss_plot(history)   
+    #And let's see where a good threshold may lie at by inspecting the loss of the training set. 
+    show_loss_distr_training_set(X_data, trained_model)
+    #extreme=False --> 95% of data considered. extreme=True --> 99% of data considered.
+    anomaly_threshold = find_loss_threshold_value(X_data, trained_model, extreme=False)
+    
+    return anomaly_threshold, trained_model  
     
     
     

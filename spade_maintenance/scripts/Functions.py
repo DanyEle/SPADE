@@ -52,7 +52,7 @@ def holdout_dummy_data(merged_data):
     return(X_train, X_test)
     
     
-def preprocess_BB_data(data_frame_loaded):
+def preprocess_BB_data(data_frame_loaded, shuffle=True):
     
     scaler = preprocessing.MinMaxScaler()
 
@@ -61,7 +61,8 @@ def preprocess_BB_data(data_frame_loaded):
                            index=data_frame_loaded.index) 
     
     #Randomly shuffle the data
-    X_data.sample(frac=1)
+    if(shuffle == True):
+        X_data.sample(frac=1)
 
     
     return(X_data)

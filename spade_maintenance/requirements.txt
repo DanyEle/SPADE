@@ -5,3 +5,4 @@ sklearn
 seaborn
 timeloop
 keras
+tensorflow

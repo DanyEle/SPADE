@@ -6,6 +6,7 @@ import time
 from timeloop import Timeloop
 from datetime import timedelta
 import matplotlib.pyplot as plt
+import pandas as pd
 %matplotlib inline
 
 
@@ -17,9 +18,6 @@ app = Flask(__name__)
 tl = Timeloop()
 
 
-
-##CONSTANTS OVER HERE!!
-
 LOOP_INTERVAL_RAW_DATA=1 #seconds
 LOOP_INTERVAL_TRAIN_MODEL=30 #seconds
 
@@ -27,13 +25,25 @@ BEAGLE_IP = "146.48.82.129"
 BEAGLE_PORT = "8086"
 
 
+#####GLOBAL VARIABLES FOR AUTOENCODERS#####
+
+G_anom_threshold_AUTO = 0
+G_autoenc_trained_model_AUTO = None
+G_autoenc_data_frame_AUTO = pd.DataFrame()
+
+#####GLOBAL VARIABLES FOR PCA#######
+
+G_dist_train_PCA = []
+G_anom_threshold_PCA = 0
+G_inv_cov_matrix_PCA = None
+G_model_PCA = None
+
 #Data stored in this dictionary upon initializing the application
 #data["timestamps"] = Format: Date + Time.The timestamp of every single data acquisition
 #data["Anomaly"] = Format: Boolean. Reports whether the current data acquisition is anomalous
 #data["Thresh"] = Float. Current value of the threshold identified
 #data["Mob Dist"] = Float. Distance of the current data acquisition from the trained model.
-data_PCA = {}
-
+#data_PCA = {}
 
 
 ######STUFF FOR PCA MODEL######
@@ -71,27 +81,8 @@ data_PCA = {}
 #anomaly["Timestamps"] = X_test_PCA.index
 
 
-#X_data_PCA = X_train_PCA or X_test_PCA
-def find_anomaly_threshold_PCA(data_train, mean_distr):
-    #compute covariance matrix
-    covariance_matrix, inv_cov_matrix = cov_matrix(data_train)
-    #calculate the Mahalanobis distance for the training data defining “normal conditions”,
-    #and find the threshold value to flag datapoints as an anomaly.
-    dist_data = MahalanobisDist(inv_cov_matrix, mean_distr, data_train, verbose=False)
-    anomaly_threshold = MD_threshold(dist_data, extreme=True)
-    
-    return anomaly_threshold, dist_data, inv_cov_matrix
-
-
-
-def main_PCA():
+def train_PCA_dummy():
     merged_data = load_data_in_data_frame()
-
-    train_display_plot_PCA_plt(merged_data)
-
-
-def train_PCA_dummy(merged_data):
-    #merged_data = load_data_in_data_frame()
     X_train, X_test = holdout_dummy_data(merged_data)
     
     X_train_PCA, X_test_PCA = preprocess_data_pca(X_train, X_test)
@@ -120,19 +111,6 @@ def train_PCA_dummy(merged_data):
     anomaly_test_PCA.index = X_test_PCA.index
     
     plot_anomaly = anomaly_test_PCA.plot(logy=True, figsize = (10,6), ylim = [1e-1,1e3], color = ['green','red'])
-
-
-def autoencoder_find_anomaly_threshold(X_data):
-    #first thing first, let's initialize the data that we will be needing to generate the autoencoder model
-    autoencoder_model = create_autoencoder(X_data)
-    trained_model, history = train_model(autoencoder_model, X_data, batch_size=1, num_epochs=100)
-    #Let's see how the loss function evolved during the training process.
-    show_training_history_loss_plot(history)   
-    #And let's see where a good threshold may lie at by inspecting the loss of the training set. 
-    show_loss_distr_training_set(X_data, trained_model)
-    anomaly_threshold = find_loss_threshold_value(X_data, trained_model)
-    
-    return anomaly_threshold, trained_model  
   
 
 def main_autoencoder_dummy():
@@ -155,52 +133,98 @@ def main_autoencoder_dummy():
     
     
 #Input: None
-#Output: the trained model based on all the data present in the BB.
+#Output: the autoencoder model trained on all the data present in the BB,
+#the data frame marked with anomalous values and the anomalous threshold
+#are are saved in global variables, respectively
+#TODO: Make this function be called every X minutes to update the model regularly. 
 def train_autoencoder_BB():
     
-    data_frame_loaded = get_data_frame_from_BB(BEAGLE_IP, BEAGLE_PORT)
-    
-    X_data = preprocess_BB_data(data_frame_loaded) 
+    data_frame_train = get_data_frame_from_BB(BEAGLE_IP, BEAGLE_PORT)
+    X_train = preprocess_BB_data(data_frame_train) 
         
     anomaly_threshold, trained_model = autoencoder_find_anomaly_threshold(X_train)
-    
+    #Update global variable.
     anomaly_threshold = 0.2
-    #Let's mark the data points 
     #if(anomaly_threshold == False):
     #    print("No outliers have been identified in the sample provided")
     #    return
-    print("Anomalous Threshold identified (Z-Test)" + str(anomaly_threshold))
+    print("Anomalous Loss Threshold identified: [" + str(anomaly_threshold)+ "]")
     
-    data_scored_anom = mark_data_frame_as_anomaly(X_data, trained_model, anomaly_threshold)
+    data_frame_train_anomalies = mark_data_frame_as_anomaly(X_train, trained_model, anomaly_threshold)
     
-    data_scored_anom.plot(logy=True,  figsize = (10,6), ylim = [1e-2,1e2], color = ['blue','red'])    
+    data_frame_train_anomalies.plot(logy=True,  figsize = (10,6), ylim = [1e-2,1e2], color = ['blue','red'])   
+    
+    ###Finally, update the global variables:
+    G_anom_threshold_AUTO = anomaly_threshold
+    G_trained_model_AUTO = trained_model
+    G_data_frame_AUTO = data_frame_train_anomalies
+    
+#Input: None
+#Output: a graph displaying whether the data stored so far, concatenated
+#with the latest obtained data and showing whether the data is exhibiting an
+#anomalous behaviour.
+def test_autoencoder_BB():
+    #Example: over here, we would just need to get the data obtained every in the last 15 minutes. 
+    data_frame_test = get_data_frame_from_BB(BEAGLE_IP, BEAGLE_PORT)
+    
+    X_test = preprocess_BB_data(data_frame_loaded) 
+    #use the global model and the global threshold that were last updated. 
+    data_frame_test = mark_data_frame_as_anomaly(X_test, G_trained_model_AUTO, G_anom_threshold_AUTO)
+
+    #let's concatenate the trainining dataset with the current test dataset ?
+    data_frame_conc = pd.concat([G_data_frame_AUTO, data_frame_test])
+    #And display all the concatenated values
+    
+    #Just the current data
+    data_frame_test.plot(logy=True,  figsize = (10,6), ylim = [1e-2,1e2], color = ['blue','red'])   
+    
+    #The test data only. 
+    data_frame_conc.plot(logy=True,  figsize = (10,6), ylim = [1e-2,1e2], color = ['blue','red'])   
 
     
-    
 def train_PCA_BB():
+    data_frame_train = get_data_frame_from_BB(BEAGLE_IP, BEAGLE_PORT)
+    #X_train, X_test = train_test_split(X_data, test_size=0.4)
+    X_train = preprocess_BB_data(data_frame_train, shuffle=True) #No need for shuffle in the test dataset.
     
-    data_frame_loaded = get_data_frame_from_BB(BEAGLE_IP, BEAGLE_PORT)
-    
-    X_data = preprocess_BB_data(data_frame_loaded) 
-    
-    X_train, X_test = train_test_split(X_data, test_size=0.4)
-       
-    X_train_PCA, X_test_PCA = preprocess_data_pca(X_train, X_test)
+    X_train_PCA, pca_model = fit_train_data_pca(data_frame_train)
     data_train =  np.array(X_train_PCA.values)
-    
     mean_distr = data_train.mean(axis=0)
+    
     #The threshold is identified automatically by the algorithm.
     #Assuming that the data follows a Chi^2 distribution if the assumption of normal distribution is fullfilled
     anomaly_threshold_train, dist_train, inv_cov_matrix = find_anomaly_threshold_PCA(data_train, mean_distr)
     
-    #Visualize the square of the Mahalanobis distance
     plot_mahab_distance_square(dist_train)
     #Visualize the mahalanobis distance itself
     plot_mahab_distance(dist_train)
     
+    #Save into GLOBAL VARIABLES the current state    
+    G_anomaly_threshold_PCA = anomaly_threshold_train
+    G_dist_train_PCA =  dist_train
+    G_inv_cov_matrix_PCA = inv_cov_matrix
+    G_model_PCA = pca_model
+    G_mean_distr_PCA = mean_distr
     
+    
+    
+def test_PCA_BB():
+    #Example: over here, we would actually need to get the data obtained in a small time frame.
+    data_frame_test = get_data_frame_from_BB(BEAGLE_IP, BEAGLE_PORT)
+    
+    #First thing first, need to pre-process the data
+    X_test = preprocess_BB_data(data_frame_test, shuffle=False)
+    
+    X_test_PCA = transform_test_data_PCA(X_test, pca=G_model_PCA)
+    #Visualize the square of the Mahalanobis distance
     data_test = np.array(X_test_PCA.values)
-    dist_test = MahalanobisDist(inv_cov_matrix, mean_distr, data_test, verbose=False)
+    
+    dist_test = MahalanobisDist(G_inv_cov_matrix_PCA, G_mean_distr_PCA, data_test, verbose=False)
+    
+    plot_mahab_distance_square(dist_test)
+    #Visualize the mahalanobis distance itself
+    plot_mahab_distance(dist_test)
+    
     #Just plot the test dataset
     anomaly_test_PCA = pd.DataFrame()
     anomaly_test_PCA['Mob dist'] = dist_test #Distance of the test dataset from the training one. 

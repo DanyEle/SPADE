@@ -42,6 +42,22 @@ def MD_threshold(dist, extreme=False, verbose=False):
     return threshold
 
 
+ 
+    
+def preprocess_data_pca(X_train, X_test):
+    from sklearn.decomposition import PCA
+    pca = PCA(n_components=2, svd_solver='full')
+    X_train_PCA = pca.fit_transform(X_train)
+    X_train_PCA = pd.DataFrame(X_train_PCA)
+    X_train_PCA.index = X_train.index
+
+    X_test_PCA = pca.transform(X_test)
+    X_test_PCA = pd.DataFrame(X_test_PCA)
+    X_test_PCA.index = X_test.index
+
+    return(X_train_PCA, X_test_PCA)
+
+
 
 #Daniele: will need to actually get the data from somewhere else at a later point in time...
 
@@ -57,7 +73,7 @@ def cov_matrix(data, verbose=False):
     else:
         print("Error: Covariance Matrix is not positive definite!")
 
-def train_PCA_model(X_train_PCA, X_test_PCA):
+def train_PCA_model(X_train_PCA, X_test_PCA, matplotlib=True):
     #Daniele: train on the normal operating conditions
     data_train = np.array(X_train_PCA.values)
     data_test = np.array(X_test_PCA.values)
@@ -78,8 +94,13 @@ def train_PCA_model(X_train_PCA, X_test_PCA):
     #Assign flags, marking data as anomalous or not anomalous
     # If Mob dist above threshold: Flag as anomaly.
     anomaly['Anomaly'] = anomaly['Mob dist'] > anomaly['Thresh']
-    anomaly["Timestamps"] = X_test_PCA.index
-
+    
+    if(matplotlib == True):
+        anomaly.index = X_test_PCA.index
+    #Else, this line is just for displaying data in flask-compatible format actually
+    else:
+        anomaly["Timestamps"] = X_test_PCA.index
+        
     return anomaly
 
 

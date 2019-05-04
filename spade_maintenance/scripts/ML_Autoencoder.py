@@ -1,4 +1,3 @@
-import os
 import pandas as pd
 import numpy as np
 from sklearn import preprocessing
@@ -7,7 +6,6 @@ sns.set(color_codes=True)
 import matplotlib.pyplot as plt
 #%matplotlib inline
 
-from numpy.random import seed
 from tensorflow import set_random_seed
 
 from keras.layers import Input, Dropout
@@ -51,27 +49,18 @@ def create_autoencoder(X_train):
 
 
 def train_model(model, X_train, batch_size, num_epochs):
+    
     history=model.fit(np.array(X_train),np.array(X_train),
                       batch_size=batch_size,
                       epochs=num_epochs,
-                      validation_split=0.05,
+                      validation_split=0.05, #5% of training samples used for validation
                       verbose = 1)
+    
+    return(model, history)
 
 
-    plt.plot(history.history['loss'],
-             'b',
-             label='Training loss')
-    plt.plot(history.history['val_loss'],
-             'r',
-             label='Validation loss')
-    plt.legend(loc='upper right')
-    plt.xlabel('Epochs')
-    plt.ylabel('Loss, [mse]')
-    plt.ylim([0,.1])
-    plt.show()
 
-
-def show_history_loss_plot(history):
+def show_training_history_loss_plot(histsklearnory):
     plt.plot(history.history['loss'],
              'b',
              label='Training loss')
@@ -83,3 +72,81 @@ def show_history_loss_plot(history):
     plt.ylabel('Loss, [mse]')
     plt.ylim([0, .1])
     plt.show()
+    
+    
+def show_loss_distr_training_set(X_train, model):
+    #let's try predicting the values for each training data point
+    X_pred = model.predict(np.array(X_train))
+    X_pred = pd.DataFrame(X_pred, 
+                          columns=X_train.columns)
+    X_pred.index = X_train.index
+    
+    scored = pd.DataFrame(index=X_train.index)
+    #Distance of the prediction from the original value
+    scored['Loss_mae'] = np.mean(np.abs(X_pred-X_train), axis = 1)
+    plt.figure()
+    sns.distplot(scored['Loss_mae'],
+                 bins = 10, 
+                 kde= True,
+                color = 'blue');
+    plt.xlim([0.0,.5])
+    
+    
+#The Z-Score is used to understand where the threshold for outliers should lie at.
+#ASSUMPTION: The data is normally distributed.!
+#By Chebishev's inequality, we know that 99% of 
+#the data will lie within 3*STD of the loss' distribution.
+#Values outside this distribution are outliers.
+#To find out the threshold, we take the mean value of all data points
+#that are considered outliers. 
+def find_loss_threshold_value(X_train, model):
+    X_pred = model.predict(np.array(X_train))
+    X_pred = pd.DataFrame(X_pred, 
+                          columns=X_train.columns)
+    X_pred.index = X_train.index
+    
+    scored = pd.DataFrame(index=X_train.index)
+    #Distance of the prediction from the original value
+    scored['Loss_mae'] = np.mean(np.abs(X_pred-X_train), axis = 1)
+    
+    mean_1 = scored['Loss_mae'].mean()
+    std_1 = scored['Loss_mae'].std() 
+    
+    threshold=3
+    
+    outliers=[]
+    
+    #Firstly, find all data points that are outliers based on the Z-Test
+    #(i.e.: all the values that are outside 3*standard deviation)
+    for y in scored['Loss_mae']:
+        z_score= (y - mean_1)/std_1 
+        if np.abs(z_score) > threshold:
+            outliers.append(y)
+    
+    #Now let's take the mean of all outliers
+    anomaly_threshold = np.mean(outliers)
+
+    return(anomaly_threshold)    
+    
+    
+#X_data can be either: X_train or X_test
+def mark_data_frame_as_anomaly(X_data, model, threshold_value):
+    X_pred = model.predict(np.array(X_data))
+    X_pred = pd.DataFrame(X_pred, 
+                          columns=X_data.columns)
+    X_pred.index = X_data.index
+    
+    scored = pd.DataFrame(index=X_data.index)
+    scored['Loss_mae'] = np.mean(np.abs(X_pred-X_data), axis = 1)
+    scored['Threshold'] = threshold_value
+    scored['Anomaly'] = scored['Loss_mae'] > scored['Threshold']
+    
+    return(scored)
+    
+    
+    
+    
+    
+    
+    
+    

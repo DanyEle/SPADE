@@ -2,13 +2,16 @@ import pandas as pd
 from sklearn import preprocessing
 import os
 import numpy as np
+import requests
+import re
+import dateutil.parser
 
 
 def load_data_in_data_frame():
     data_dir = '/home/daniele/WNES/2nd_test'
     merged_data = pd.DataFrame()
     print("Loading the data....")
-    #Use one data point every 10 minutes
+    #Use one data point every 10 minutes (i.e.: take the mean every 10 minutes)
     for filename in os.listdir(data_dir):
         print(filename)
         dataset=pd.read_csv(os.path.join(data_dir, filename), sep='\t')
@@ -42,14 +45,50 @@ def holdout_data(merged_data):
     X_test = pd.DataFrame(scaler.transform(dataset_test),
                           columns=dataset_test.columns,
                           index=dataset_test.index)
-    from sklearn.decomposition import PCA
-    pca = PCA(n_components=2, svd_solver='full')
-    X_train_PCA = pca.fit_transform(X_train)
-    X_train_PCA = pd.DataFrame(X_train_PCA)
-    X_train_PCA.index = X_train.index
+    
+    
+    return(X_train, X_test)
+    
+#Input: beagleboard's IP and port where InfluxDB is running
+#Output: ALL the data points the beagle board has accumulated so far
+#In this function, we extract all the data points from the Beagle board
+#and put all of these data points into a data frame for further processing
+def get_data_frame_from_BB(beagle_ip, beagle_port):
+    parameters = {}
 
-    X_test_PCA = pca.transform(X_test)
-    X_test_PCA = pd.DataFrame(X_test_PCA)
-    X_test_PCA.index = X_test.index
+    parameters["db"] = "mydb"
+    parameters["q"] = "SELECT * FROM accelerator"
 
-    return(X_train_PCA, X_test_PCA)
+    URL = "http://" + beagle_ip +  ":" + beagle_port + "/query"
+    response = requests.get(URL, params=parameters)
+    response_json = response.json()
+    list_results = response_json["results"]
+    values_dictionary = list_results[0]
+    values_series = values_dictionary["series"]
+
+    series_dictionary = values_series[0]
+
+    list_data_points = series_dictionary["values"]
+    
+    data_frame = pd.DataFrame(list_data_points, columns=["Timestamp", "X", "Y", "Z"])
+    
+    column_ts = parse_timestamps_column(data_frame["Timestamp"] )
+    #Notice that now the timestamp is the index!
+    data_frame.index = column_ts
+    data_frame.drop(columns=["Timestamp"])
+    del data_frame.index.name
+    
+    return(data_frame)
+    
+    
+#Input: a Series of timestamps in ISO-8601 format, like:
+#2019-05-01T16:01:19.168352264Z
+#Output: A series of parsed timestamps 
+def parse_timestamps_column(column_ts):
+    column_ts_parsed = column_ts.apply(lambda ts : dateutil.parser.parse(ts))       
+    pd_column_ts = pd.to_datetime(column_ts_parsed)
+    return(pd_column_ts)
+    
+
+    
+    

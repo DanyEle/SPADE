@@ -3,54 +3,10 @@ from sklearn import preprocessing
 import os
 import numpy as np
 import requests
-import re
 import dateutil.parser
 from sklearn.model_selection import train_test_split
 
 
-
-def load_data_in_data_frame():
-    data_dir = '/home/daniele/WNES/2nd_test'
-    merged_data = pd.DataFrame()
-    print("Loading the data....")
-    #Use one data point every 10 minutes (i.e.: take the mean every 10 minutes)
-    for filename in os.listdir(data_dir):
-        print(filename)
-        dataset=pd.read_csv(os.path.join(data_dir, filename), sep='\t')
-        dataset_mean_abs = np.array(dataset.abs().mean())
-        dataset_mean_abs = pd.DataFrame(dataset_mean_abs.reshape(1,4))
-        dataset_mean_abs.index = [filename]
-        merged_data = merged_data.append(dataset_mean_abs)
-
-    #Daniele: 4 bearings --> 4 accelerometers' data.
-    merged_data.columns = ['Bearing 1','Bearing 2','Bearing 3','Bearing 4']
-
-    merged_data.index = pd.to_datetime(merged_data.index, format='%Y.%m.%d.%H.%M.%S')
-    merged_data = merged_data.sort_index()
-    #merged_data.to_csv('merged_dataset_BearingTest_2.csv')
-    #merged_data.head()
-    return(merged_data)
-
-
-def holdout_dummy_data(merged_data):
-    dataset_train = merged_data['2004-02-12 11:02:39':'2004-02-13 23:52:39']
-    dataset_test = merged_data['2004-02-13 23:52:39':]
-
-    scaler = preprocessing.MinMaxScaler()
-
-    X_train = pd.DataFrame(scaler.fit_transform(dataset_train),
-                           columns=dataset_train.columns,
-                           index=dataset_train.index)
-    # Random shuffle training data
-    X_train.sample(frac=1)
-
-    X_test = pd.DataFrame(scaler.transform(dataset_test),
-                          columns=dataset_test.columns,
-                          index=dataset_test.index)
-    
-    
-    return(X_train, X_test)
-    
     
 def preprocess_BB_data(data_frame_loaded, shuffle=True):
     
@@ -76,7 +32,7 @@ def get_data_frame_from_BB(beagle_ip, beagle_port):
     parameters = {}
 
     parameters["db"] = "mydb"
-    parameters["q"] = "SELECT * FROM accelerator"
+    parameters["q"] = "SELECT * FROM accelerometer" #accelerator is the DB with less data instead.
 
     URL = "http://" + beagle_ip +  ":" + beagle_port + "/query"
     response = requests.get(URL, params=parameters)
@@ -101,7 +57,8 @@ def get_data_frame_from_BB(beagle_ip, beagle_port):
     
     return(data_frame)
     
-    
+   
+ 
 #Input: a Series of timestamps in ISO-8601 format, like:
 #2019-05-01T16:01:19.168352264Z
 #Output: A series of parsed timestamps 

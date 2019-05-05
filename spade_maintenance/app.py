@@ -1,4 +1,3 @@
-from flask import Flask, render_template
 from scripts.ML_PCA import *
 from scripts.ML_Autoencoder import *
 from scripts.Functions import *
@@ -9,15 +8,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 %matplotlib inline
 from sklearn.model_selection import train_test_split
-
-
-
-
 import requests
 
-
-app = Flask(__name__)
-tl = Timeloop()
 
 
 LOOP_INTERVAL_RAW_DATA=1 #seconds
@@ -42,49 +34,6 @@ G_model_PCA = None
 G_mean_distr_PCA = []
 
 
-#Data stored in this dictionary upon initializing the application
-#data["timestamps"] = Format: Date + Time.The timestamp of every single data acquisition
-#data["Anomaly"] = Format: Boolean. Reports whether the current data acquisition is anomalous
-#data["Thresh"] = Float. Current value of the threshold identified
-#data["Mob Dist"] = Float. Distance of the current data acquisition from the trained model.
-#data_PCA = {}
-
-
-######STUFF FOR PCA MODEL######
-#@app.route('/',  methods=['GET'])
-#def flask_train_display_PCA_plot():
-#    
-#    #Then, split the data into train and test
-#    #Training data: non-anomalous data (steady-state conditions)
-#    #Then, given a test sample, we compute the Mahalanobis
-#    #distance to the non-anomalous data
-#    # and classify the test points as an “anomaly”
-#    # if the distance is above a certain threshold.
-#    X_train, X_test = holdout_dummy_data(merged_data)
-#    
-#    X_train_PCA, X_test_PCA = preprocess_data_pca(X_train, X_test)
-#    
-#    
-#    timestamps = list(data_PCA.get("Timestamps"))
-#    #Remove the useless timestamp from the string
-#    timestamps_fixed = [str(s).replace('Timestamp(', '') for s in timestamps]
-#    return render_template("index.html", timestamps=timestamps_fixed, distances=list(data_PCA.get("Mob dist")),
-#                           anomalies=list(data_PCA.get("Anomaly")), thresholds = list(data_PCA.get("Thresh")))
-
-
-#def preprocess_data_flask():
-#    X_train, X_test = initialize_data()
-#    
-#    anomaly_all_data_PCA = train_PCA_model(X_train, X_test, matplotlib=False)
-#    data_PCA["Mob dist"] = anomaly_all_data_PCA["Mob dist"]
-#    data_PCA["Thresh"] = anomaly_all_data_PCA["Thresh"]
-#    data_PCA["Anomaly"] = anomaly_all_data_PCA["Anomaly"]
-#    data_PCA["Timestamps"] = anomaly_all_data_PCA["Timestamps"]
-
-#Remember for displaying with flask:
-#anomaly["Timestamps"] = X_test_PCA.index
-
-
 
   
 #Input: None
@@ -94,12 +43,19 @@ G_mean_distr_PCA = []
 #TODO: Make this function be called every X minutes to update the model regularly. 
 def train_autoencoder_BB():
     
-    data_frame_train = get_data_frame_from_BB(BEAGLE_IP, BEAGLE_PORT)   
+    data_frame_train = get_data_frame_from_BB(BEAGLE_IP, BEAGLE_PORT)  
+    #let's try to visualize the data got from the beagle
+    #X_train, X_test = train_test_split(data_frame_train, test_size=0.2)
     
-    X_train, X_test = train_test_split(data_frame_train, test_size=0.2)
+    #STEADY STATE
+    X_train = data_frame_train[0:201]
     
-    X_train = preprocess_BB_data(data_frame_train) 
+    #ANOMALOUS 
+    X_test = data_frame_train[202:]
+    
+    X_train = preprocess_BB_data(X_train) #data_frame_train 
         
+    #If training goes wrong, that means the old model is still being used!
     anomaly_threshold, trained_model = autoencoder_find_anomaly_threshold(X_train)
     #Update global variable.
     #anomaly_threshold = 0.2
@@ -116,7 +72,6 @@ def train_autoencoder_BB():
     G_anom_threshold_AUTO = anomaly_threshold
     G_trained_model_AUTO = trained_model
     G_data_frame_AUTO = data_frame_train_anomalies
-    
 
 #Input: None
 #Output: a graph displaying whether the data stored so far, concatenated
@@ -138,15 +93,21 @@ def test_autoencoder_BB():
     #Just the current data
     data_frame_test.plot(logy=False,  figsize = (10,6),  color = ['blue','red'])   
     
-    #The test data only. 
-    #data_frame_conc.plot(logy=False,  figsize = (10,6), color = ['blue','red'])   
+    new_indices = np.arange(0, len(data_frame_conc))
+    data_frame_new_indexes = data_frame_conc
+    data_frame_new_indexes.index = new_indices
+    #Current data and the test data
+    data_frame_new_indexes.plot(logy=False,  figsize = (10,6), color = ['blue','red'])   
 
+    #TODO: insert the data of data_frame_test into influxDB, where it will displayed.
+    insert_data_frame_into_influx(data_frame_test)
+        
     
     
 def train_PCA_BB():
     data_frame_train = get_data_frame_from_BB(BEAGLE_IP, BEAGLE_PORT)
     
-    X_train, X_test = train_test_split(data_frame_train, test_size=0.7)
+    X_train, X_test = train_test_split(data_frame_train, test_size=0.6)
     
     X_train_PCA = preprocess_BB_data(X_train, shuffle=True)  #data_frame_train
     
@@ -169,7 +130,6 @@ def train_PCA_BB():
     G_inv_cov_matrix_PCA = inv_cov_matrix
     G_model_PCA = pca_model
     G_mean_distr_PCA = mean_distr
-    
     
     
 def test_PCA_BB():
@@ -201,6 +161,13 @@ def test_PCA_BB():
     
     plot_anomaly = anomaly_test_PCA.plot(logy=True, figsize = (10,6), ylim = [1e-1,1e3], color = ['green','red'])
 
+    anom_test_new = anomaly_test_PCA
+    #Alternative non-scaled representation
+    new_indices = np.arange(0, len(anomaly_test_PCA))
+    anom_test_new.index = new_indices
+    
+    plot_anomaly = anom_test_new.plot(logy=True, figsize = (10,6), ylim = [1e-1,1e3], color = ['green','red'])
+
     
 
 #######STUFF FOR BEAGLEBOARD#####
@@ -215,16 +182,6 @@ def run_task_regularly():
 def train_model():
     print("Training model....")
 
-
-
-
-
-#Commands ran upon starting application
-if __name__ == '__main__':
-    #X_train, X_test =  initialize_data()
-    tl.start(block=False)
-
-
-    app.run(debug=True)
-
+tl = Timeloop()
+tl.start(block=False)
 

@@ -6,6 +6,9 @@ import requests
 import dateutil.parser
 from sklearn.model_selection import train_test_split
 
+import time
+import datetime
+
 
     
 def preprocess_BB_data(data_frame_loaded, shuffle=True):
@@ -20,7 +23,6 @@ def preprocess_BB_data(data_frame_loaded, shuffle=True):
     if(shuffle == True):
         X_data.sample(frac=1)
 
-    
     return(X_data)
     
     
@@ -68,5 +70,24 @@ def parse_timestamps_column(column_ts):
     return(pd_column_ts)
     
 
+
+def insert_data_frame_into_influx(data_frame_test):
+   
+    for i in range(len(data_frame_test)) :
+        #print(acc_x[i],acc_y[i],acc_z[i])
+        #row is a list!
+        row = data_frame_test.iloc[i]
+        loss = row[0]
+        threshold=row[1]
+        anomaly=row[2]
+        timestamp= row.name.value #Unix formatting
+        #Access the different row values with increasing indices
+        #Apart from the timestamp, which is the row's index --> Needs to be access via ".name"
+        command = """curl -d "autoencoder loss_mae={},threshold={},anomaly={} {}" -X POST http://localhost:8086/write?db=mydb""".format(str(row[0]), str(row[1]), str(row[2]), str(timestamp))
+        os.system(command)
+    
+    
+    
+    
     
     

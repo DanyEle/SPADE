@@ -3,7 +3,7 @@
 import numpy as np
 import os, time
 
-amount = 20
+amount = 1
 
 mu, sigma = -50, 20 # mean and standard deviation
 acc_x = np.random.normal(mu, sigma, amount)

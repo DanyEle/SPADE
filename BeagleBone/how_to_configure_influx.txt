@@ -15,6 +15,12 @@ In order to start influx:
 
 sudo influxd run -config /etc/influxdb/influxdb.conf 
 
+In order to stop influx:
+
+sudo service influxdb stop
+
+
+
 
 
 

@@ -15,39 +15,48 @@ INFLUX_TABLE = "accelerometer"
 
     
 def preprocess_BB_data(data_frame_loaded, shuffle=True):
-    
     scaler = preprocessing.MinMaxScaler()
 
     X_data = pd.DataFrame(scaler.fit_transform(data_frame_loaded),
                            columns=data_frame_loaded.columns,
                            index=data_frame_loaded.index) 
-    
     #Randomly shuffle the data
     if(shuffle == True):
         X_data.sample(frac=1)
 
     return(X_data)
     
-    
-#Input: beagleboard's IP and port where InfluxDB is running
+#Input: beagle IP: beagleboard's IP of InfluxDB is running
+#       beagle port: beagleboard's PORT of where InfluxDB is running
+#       seconds: if == -1, then get all the data from the table
+#                if >= 1, then get the data from the last 'seconds' from the table
 #Output: ALL the data points the beagle board has accumulated so far
 #In this function, we extract all the data points from the Beagle board
 #and put all of these data points into a data frame for further processing
-def get_data_frame_from_BB(beagle_ip, beagle_port):
+def get_data_frame_from_BB(beagle_ip, beagle_port, seconds=-1):
     parameters = {}
-
     parameters["db"] = "mydb"
-    parameters["q"] = "SELECT * FROM " + str(INFLUX_TABLE) #accelerator is the DB with less data instead.
+    #Need to get all data in the past X minutes(?)
+    
+    #Get all the data
+    if(seconds == -1):
+        parameters["q"] = "SELECT * FROM " + str(INFLUX_TABLE) 
+    elif(seconds >= 1):
+        parameters["q"] = "SELECT * FROM " + str(INFLUX_TABLE) + " WHERE time <= now() AND time >= now() - " + str(seconds) + "s"
 
-    URL = "http://" + beagle_ip +  ":" + beagle_port + "/query"
+    URL = "http://" + beagle_ip +  ":" + str(beagle_port) + "/query"
     response = requests.get(URL, params=parameters)
     response_json = response.json()
     list_results = response_json["results"]
     values_dictionary = list_results[0]
+    #check if values_dictionary has key "series"
+    
+    if 'series' not in values_dictionary:
+        print("No data points fetched from the BB")
+        return(None)
+        
     values_series = values_dictionary["series"]
-
     series_dictionary = values_series[0]
-
     list_data_points = series_dictionary["values"]
     
     data_frame = pd.DataFrame(list_data_points, columns=["Timestamp", "X", "Y", "Z"])
@@ -80,12 +89,16 @@ def insert_data_frame_into_influx(data_frame_test):
         row = data_frame_test.iloc[i]
         #loss = row[0]
         #threshold=row[1]
-        #anomaly=row[2]
+        #anomaly=row[2]r
         timestamp= row.name.value #Unix formatting
         #Access the different row values with increasing indices
         #Apart from the timestamp, which is the row's index --> Needs to be access via ".name"
         command = """curl -d "autoencoder loss_mae={},threshold={},anomaly={} {}" -X POST http://"{}:{}/write?db=mydb""".format(str(row[0]), str(row[1]), str(row[2]), str(timestamp), str(INXFLUX_HOST), str(INFLUX_PORT))
         os.system(command)
+        
+        
+#X_data can be either: X_train or X_test
+
     
     
     

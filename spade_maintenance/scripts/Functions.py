@@ -9,6 +9,9 @@ from sklearn.model_selection import train_test_split
 import time
 import datetime
 
+INXFLUX_HOST = "146.48.82.95"
+INFLUX_PORT = 8086
+INFLUX_TABLE = "accelerometer"
 
     
 def preprocess_BB_data(data_frame_loaded, shuffle=True):
@@ -34,7 +37,7 @@ def get_data_frame_from_BB(beagle_ip, beagle_port):
     parameters = {}
 
     parameters["db"] = "mydb"
-    parameters["q"] = "SELECT * FROM accelerometer" #accelerator is the DB with less data instead.
+    parameters["q"] = "SELECT * FROM " + str(INFLUX_TABLE) #accelerator is the DB with less data instead.
 
     URL = "http://" + beagle_ip +  ":" + beagle_port + "/query"
     response = requests.get(URL, params=parameters)
@@ -70,24 +73,19 @@ def parse_timestamps_column(column_ts):
     return(pd_column_ts)
     
 
-
 def insert_data_frame_into_influx(data_frame_test):
-   
     for i in range(len(data_frame_test)) :
         #print(acc_x[i],acc_y[i],acc_z[i])
         #row is a list!
         row = data_frame_test.iloc[i]
-        loss = row[0]
-        threshold=row[1]
-        anomaly=row[2]
+        #loss = row[0]
+        #threshold=row[1]
+        #anomaly=row[2]
         timestamp= row.name.value #Unix formatting
         #Access the different row values with increasing indices
         #Apart from the timestamp, which is the row's index --> Needs to be access via ".name"
-        command = """curl -d "autoencoder loss_mae={},threshold={},anomaly={} {}" -X POST http://localhost:8086/write?db=mydb""".format(str(row[0]), str(row[1]), str(row[2]), str(timestamp))
+        command = """curl -d "autoencoder loss_mae={},threshold={},anomaly={} {}" -X POST http://"{}:{}/write?db=mydb""".format(str(row[0]), str(row[1]), str(row[2]), str(timestamp), str(INXFLUX_HOST), str(INFLUX_PORT))
         os.system(command)
-    
-    
-    
     
     
     

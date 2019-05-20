@@ -11,12 +11,11 @@ from sklearn.model_selection import train_test_split
 import requests
 
 
-
 LOOP_INTERVAL_RAW_DATA=1 #seconds
 LOOP_INTERVAL_TRAIN_MODEL=30 #seconds
 
-BEAGLE_IP = "146.48.82.129"
-BEAGLE_PORT = "8086"
+INFLUX_IP = "146.48.82.129"
+INFLUX_PORT = "8086"
 
 
 #####GLOBAL VARIABLES FOR AUTOENCODERS#####
@@ -34,7 +33,6 @@ G_model_PCA = None
 G_mean_distr_PCA = []
 
 
-
   
 #Input: None
 #Output: the autoencoder model trained on all the data present in the BB,
@@ -43,15 +41,15 @@ G_mean_distr_PCA = []
 #TODO: Make this function be called every X minutes to update the model regularly. 
 def train_autoencoder_BB():
     
-    data_frame_train = get_data_frame_from_BB(BEAGLE_IP, BEAGLE_PORT)  
+    data_frame_train = get_data_frame_from_BB(INFLUX_IP, INFLUX_PORT)  
     #let's try to visualize the data got from the beagle
     #X_train, X_test = train_test_split(data_frame_train, test_size=0.2)
     
     #STEADY STATE
-    X_train = data_frame_train[0:201]
+    X_train = data_frame_train[0:4000]
     
     #ANOMALOUS 
-    X_test = data_frame_train[202:]
+    X_test = data_frame_train[4001:4500]
     
     X_train = preprocess_BB_data(X_train) #data_frame_train 
         

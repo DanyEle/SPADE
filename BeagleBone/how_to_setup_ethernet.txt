@@ -2,7 +2,7 @@
 2. Connect to the Beagleboard via SSh
 3. Get the ID of the ethernet interface as:
 
-commanctl
+connmanctl
 services
 
 EX: In my case: ethernet_74e1829fe229_cable

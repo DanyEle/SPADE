@@ -16,3 +16,7 @@ sudo connmanctl config <service> --ipv4 manual <ip_addr> <netmask> <gateway> --n
 sudo ifconfig eth0 down
 sudo ifconfig eth0 up
 5. If everything went well, you will now be able to access the internet!
+
+6. Restart the beableboard
+
+sudo reboot -h now

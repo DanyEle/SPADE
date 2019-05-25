@@ -1,0 +1,4 @@
+1. ssh debian@146.48.82.129
+2. ./stop_start_influx.sh
+3. screen -r
+4. Enter password: temppwd

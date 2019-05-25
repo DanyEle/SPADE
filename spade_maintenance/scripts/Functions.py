@@ -11,7 +11,6 @@ import datetime
 
 INXFLUX_HOST = "146.48.82.95"
 INFLUX_PORT = 8086
-INFLUX_TABLE = "accelerometer"
 
 INFLUX_INSERT_HOST = "146.48.82.129"
 INFLUX_INSER_PORT = 8086
@@ -36,16 +35,16 @@ def preprocess_BB_data(data_frame_loaded, shuffle=True):
 #Output: ALL the data points the beagle board has accumulated so far
 #In this function, we extract all the data points from the Beagle board
 #and put all of these data points into a data frame for further processing
-def get_data_frame_from_BB(beagle_ip, beagle_port, seconds=-1):
+def get_data_frame_from_BB(beagle_ip, beagle_port, influx_table, seconds=-1):
     parameters = {}
     parameters["db"] = "mydb"
     #Need to get all data in the past X minutes(?)
     
     #Get all the data
     if(seconds == -1):
-        parameters["q"] = "SELECT * FROM " + str(INFLUX_TABLE) 
+        parameters["q"] = "SELECT * FROM " + str(influx_table) 
     elif(seconds >= 1):
-        parameters["q"] = "SELECT * FROM " + str(INFLUX_TABLE) + " WHERE time <= now() AND time >= now() - " + str(seconds) + "s"
+        parameters["q"] = "SELECT * FROM " + str(influx_table) + " WHERE time <= now() AND time >= now() - " + str(seconds) + "s"
 
     URL = "http://" + beagle_ip +  ":" + str(beagle_port) + "/query"
     response = requests.get(URL, params=parameters)

@@ -49,7 +49,7 @@ G_mean_distr_PCA = []
 #the data frame marked with anomalous values and the anomalous threshold
 #are saved in global variables, respectively
 def train_autoencoder_BB():
-    data_frame_train = get_data_frame_from_BB(INFLUX_IP_RAW_DATA, INFLUX_PORT_RAW_DATA)  
+    data_frame_train = get_data_frame_from_BB(INFLUX_IP_RAW_DATA, "accelerometer", INFLUX_PORT_RAW_DATA)  
     #let's try to visualize the data got from the beagle
     #X_train, X_test = train_test_split(data_frame_train, test_size=0.2)
     #STEADY STATE
@@ -83,7 +83,7 @@ def train_autoencoder_BB():
 #anomalous behaviour.
 def test_autoencoder_BB():
     #Example: over here, we would just need to get the data obtained every in the last 15 minutes. 
-    data_frame_test = get_data_frame_from_BB(INFLUX_IP_RAW_DATA, INFLUX_PORT_RAW_DATA, LOOP_INTERVAL_INFERENCE_AUTO)
+    data_frame_test = get_data_frame_from_BB(INFLUX_IP_RAW_DATA, INFLUX_PORT_RAW_DATA, "accelerometer", LOOP_INTERVAL_INFERENCE_AUTO)
     
     X_test = preprocess_BB_data(data_frame_test)  #data_frame_test to get all the data
     
@@ -109,7 +109,7 @@ def test_autoencoder_BB():
         
     
 def train_PCA_BB():
-    data_frame_train = get_data_frame_from_BB(INFLUX_IP_RAW_DATA, INFLUX_PORT_RAW_DATA)
+    data_frame_train = get_data_frame_from_BB(INFLUX_IP_RAW_DATA, INFLUX_PORT_RAW_DATA, "accelerometer")
     #X_train, X_test = train_test_split(data_frame_train, test_size=0.6)
     X_train_PCA = preprocess_BB_data(data_frame_train, shuffle=True)  #X_train
     X_train_PCA, pca_model = fit_train_data_pca(X_train_PCA) #X_train_PCA
@@ -136,7 +136,7 @@ def train_PCA_BB():
     
 def test_PCA_BB():
     #Example: over here, we would actually need to get the data obtained in a small time frame.
-    data_frame_test = get_data_frame_from_BB(INFLUX_IP_RAW_DATA, INFLUX_PORT_RAW_DATA, LOOP_INTERVAL_INFERENCE_PCA)
+    data_frame_test = get_data_frame_from_BB(INFLUX_IP_RAW_DATA, INFLUX_PORT_RAW_DATA, "accelerometer", LOOP_INTERVAL_INFERENCE_PCA)
     
     #First thing first, need to pre-process the data
     X_test = preprocess_BB_data(data_frame_test, shuffle=False) #X_test

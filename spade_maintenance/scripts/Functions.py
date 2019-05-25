@@ -13,6 +13,9 @@ INXFLUX_HOST = "146.48.82.95"
 INFLUX_PORT = 8086
 INFLUX_TABLE = "accelerometer"
 
+INFLUX_INSERT_HOST = "146.48.82.129"
+INFLUX_INSER_PORT = 8086
+
     
 def preprocess_BB_data(data_frame_loaded, shuffle=True):
     scaler = preprocessing.MinMaxScaler()
@@ -82,7 +85,7 @@ def parse_timestamps_column(column_ts):
     return(pd_column_ts)
     
 
-def insert_data_frame_into_influx(data_frame_test):
+def insert_data_frame_into_influx(data_frame_test, table_name, influx_ip, influx_port):
     for i in range(len(data_frame_test)) :
         #print(acc_x[i],acc_y[i],acc_z[i])
         #row is a list!
@@ -93,7 +96,7 @@ def insert_data_frame_into_influx(data_frame_test):
         timestamp= row.name.value #Unix formatting
         #Access the different row values with increasing indices
         #Apart from the timestamp, which is the row's index --> Needs to be access via ".name"
-        command = """curl -d "autoencoder loss_mae={},threshold={},anomaly={} {}" -X POST http://"{}:{}/write?db=mydb""".format(str(row[0]), str(row[1]), str(row[2]), str(timestamp), str(INXFLUX_HOST), str(INFLUX_PORT))
+        command = """curl -d "{} loss_mae={},threshold={},anomaly={} {}" -X POST http://"{}:{}/write?db=mydb""".format(str(table_name), str(row[0]), str(row[1]), str(row[2]), str(timestamp), str(influx_ip), str(influx_port))
         os.system(command)
         
         

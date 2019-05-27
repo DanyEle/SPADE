@@ -84,18 +84,21 @@ def parse_timestamps_column(column_ts):
     return(pd_column_ts)
     
 
-def insert_data_frame_into_influx(data_frame_test, table_name, influx_ip, influx_port):
-    for i in range(len(data_frame_test)) :
+def insert_data_frame_into_influx(data_frame_test, influx_ip, influx_port, table_name):
+    print("Inserting data into table [" + str(table_name) + "] at " + str(influx_ip) + ":" + str(influx_port) + "...")
+    for i in range(len(data_frame_test)):
         #print(acc_x[i],acc_y[i],acc_z[i])
         #row is a list!
         row = data_frame_test.iloc[i]
         #loss = row[0]
         #threshold=row[1]
         #anomaly=row[2]r
+        #print(row)
         timestamp= row.name.value #Unix formatting
         #Access the different row values with increasing indices
         #Apart from the timestamp, which is the row's index --> Needs to be access via ".name"
-        command = """curl -d "{} loss_mae={},threshold={},anomaly={} {}" -X POST http://"{}:{}/write?db=mydb""".format(str(table_name), str(row[0]), str(row[1]), str(row[2]), str(timestamp), str(influx_ip), str(influx_port))
+        command = """curl -d "{} distance={},threshold={},anomaly={} {}" -X POST http://{}:{}/write?db=mydb""".format(str(table_name), str(row[0]), str(row[1]), str(row[2]), str(timestamp), str(influx_ip), str(influx_port))
+        #print(command)
         os.system(command)
         
         

@@ -16,11 +16,16 @@ tl = Timeloop()
 LOOP_INTERVAL_INFERENCE_AUTO=30 #seconds
 LOOP_INTERVAL_TRAIN_MODEL_AUTO=3000 #seconds
 
+
+TIME_INFERENCE_AUTO=600
+TIME_TRAIN_MODEL_AUTO=120
+
+
 #PCA loop interval
 LOOP_INTERVAL_INFERENCE_PCA=10 #seconds
 LOOP_INTERVAL_TRAIN_MODEL_PCA=120 #seconds
 
-TIME_INFERENCE_PCA=500 #get the data from the last X seconds
+TIME_INFERENCE_PCA=600 #get the data from the last X seconds
 TIME_TRAIN_MODEL_PCA=120 #get the data from the last X seconds
 
 
@@ -59,7 +64,7 @@ global G_mean_distr_PCA
 #the data frame marked with anomalous values and the anomalous threshold
 #are saved in global variables, respectively
 def train_autoencoder_BB():
-    data_frame_train = get_data_frame_from_BB(INFLUX_IP_RAW_DATA, INFLUX_PORT_RAW_DATA, INFLUX_TABLE_RAW_DATA, LOOP_INTERVAL_TRAIN_MODEL_AUTO)  
+    data_frame_train = get_data_frame_from_BB(INFLUX_IP_RAW_DATA, INFLUX_PORT_RAW_DATA, INFLUX_TABLE_RAW_DATA, TIME_TRAIN_MODEL_AUTO)  
     #let's try to visualize the data got from the beagle
     #X_train, X_test = train_test_split(data_frame_train, test_size=0.2)
     #STEADY STATE
@@ -72,9 +77,8 @@ def train_autoencoder_BB():
     #Debug: And let's see where a good threshold may lie at by inspecting the loss of the training set. 
     show_loss_distr_training_set(X_train, trained_model)
     #Update global variable.
-    if(anomaly_threshold == False):
-        print("No outliers have been identified in the sample provided")
-        return(None)
+    #if(anomaly_threshold == False):
+    #    print("No outliers have been identified in the sample provided")
         
     print("Anomalous Loss Threshold identified: [" + str(anomaly_threshold)+ "]")
     
@@ -96,7 +100,7 @@ def train_autoencoder_BB():
 #anomalous behaviour.
 def test_autoencoder_BB():
     #Example: over here, we would just need to get the data obtained every in the last 15 minutes. 
-    data_frame_test = get_data_frame_from_BB(INFLUX_IP_RAW_DATA, INFLUX_PORT_RAW_DATA, INFLUX_TABLE_RAW_DATA, LOOP_INTERVAL_INFERENCE_AUTO) 
+    data_frame_test = get_data_frame_from_BB(INFLUX_IP_RAW_DATA, INFLUX_PORT_RAW_DATA, INFLUX_TABLE_RAW_DATA, TIME_INFERENCE_AUTO) 
     
     X_test = preprocess_BB_data(data_frame_test)  #data_frame_test to get all the data
     
@@ -112,10 +116,10 @@ def test_autoencoder_BB():
     print("Anomaly threshold in the Autoencoder inference phase [" + str(G_anom_threshold_AUTO) + " ]")
     #Debug plot - Just the current data
     data_frame_test.plot(logy=False,  figsize = (10,6),  color = ['blue','red'])   
-    new_indices = np.arange(0, len(data_frame_conc))
-
-    #TODO: insert the data of data_frame_test into influxDB, where it will be displayed by Grafana
-    insert_data_frame_into_influx(data_frame_test, INFLUX_IP_PROCESSED, INFLUX_PORT_PROCESSED, INFLUX_TABLE_PROCESSED_AUTO)
+    #new_indices = np.arange(0, len(data_frame_conc))
+    #Insert the data of data_frame_test into influxDB, where it will be displayed by Grafana
+    #Only insert data in the interval passed
+    insert_data_frame_into_influx(data_frame_test, INFLUX_IP_PROCESSED, INFLUX_PORT_PROCESSED, INFLUX_TABLE_PROCESSED_AUTO, LOOP_INTERVAL_INFERENCE_PCA)
     print("Done inserting data!")
         
     
@@ -152,7 +156,7 @@ def train_PCA_BB():
     
 def test_PCA_BB():
     #Example: over here, we would actually need to get the data obtained in a small time frame.
-    data_frame_test = get_data_frame_from_BB(INFLUX_IP_RAW_DATA, INFLUX_PORT_RAW_DATA, INFLUX_TABLE_RAW_DATA, TIME_INFERENCE_PCA)
+    data_frame_test = get_data_frame_from_BB(INFLUX_IP_RAW_DATA, INFLUX_PORT_RAW_DATA, INFLUX_TABLE_RAW_DATA, TIME_INFERENCE_AUTO)
     #First thing first, need to pre-process the data
     X_test = preprocess_BB_data(data_frame_test, shuffle=False) #X_test
     X_test_PCA = transform_test_data_PCA(X_test, pca=G_model_PCA)
@@ -163,7 +167,7 @@ def test_PCA_BB():
     #plot_mahab_distance_square(dist_test)
     #Visualize the mahalanobis distance itself
     #Debug plot
-    plot_mahab_distance(dist_test)
+    #plot_mahab_distance(dist_test)
     #Just plot the test dataset
     anomaly_test_PCA = pd.DataFrame()
     anomaly_test_PCA['Mob dist'] = dist_test #Distance of the test dataset from the training one. 
@@ -179,9 +183,8 @@ def test_PCA_BB():
     #new_indices = np.arange(0, len(anomaly_test_PCA))
     #anom_test_new.index = new_indices
     
-    insert_data_frame_into_influx(anomaly_test_PCA, INFLUX_IP_PROCESSED, INFLUX_PORT_PROCESSED, INFLUX_TABLE_PROCESSED_PCA)
+    insert_data_frame_into_influx(anomaly_test_PCA, INFLUX_IP_PROCESSED, INFLUX_PORT_PROCESSED, INFLUX_TABLE_PROCESSED_PCA, LOOP_INTERVAL_INFERENCE_PCA)
     print("Done inserting data!")
-
     
     #Debug plot
     #plot_anomaly = anom_test_new.plot(logy=True, figsize = (10,6), ylim = [1e-1,1e3], color = ['green','red'])

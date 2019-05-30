@@ -20,11 +20,9 @@ INFLUX_INSER_PORT = 8086
 #Output: the column with values containing cur_value - next_value in that axis.
 def get_axis_difference(column_values):
     return ([abs(x - column_values[i - 1]) for i, x in enumerate(column_values)][1:])
-
-
     
 def preprocess_BB_data(data_frame_loaded, shuffle=True):
-    #need to get the difference between a value and the one following it, axis-wise
+    #need to get the difference between a value and the one following it, axis-wise (a delta)
     data_frame_diff = pd.DataFrame(columns=['X', 'Y', 'Z'])    
     data_frame_diff["X"] = get_axis_difference(data_frame_loaded["X"])
     data_frame_diff["Y"] = get_axis_difference(data_frame_loaded["Y"])
@@ -32,8 +30,6 @@ def preprocess_BB_data(data_frame_loaded, shuffle=True):
 
     data_frame_diff.index = data_frame_loaded[1:].index
 
-    
-    
     scaler = preprocessing.MinMaxScaler()
     X_data = pd.DataFrame(scaler.fit_transform(data_frame_diff),
                            columns=data_frame_diff.columns,
@@ -100,22 +96,45 @@ def parse_timestamps_column(column_ts):
     return(pd_column_ts)
     
 
-def insert_data_frame_into_influx(data_frame_test, influx_ip, influx_port, table_name):
+#Input: time_interval. The now() - time_interval of the data that will be inserted into InfluxDB
+def insert_data_frame_into_influx(data_frame_test, influx_ip, influx_port, table_name, time_interval):
     print("Inserting data into table [" + str(table_name) + "] at " + str(influx_ip) + ":" + str(influx_port) + "...")
-    for i in range(len(data_frame_test)):
-        #print(acc_x[i],acc_y[i],acc_z[i])
+    #Most recent timestamp
+    last_timestamp_unix = data_frame_test.iloc[len(data_frame_test["Threshold"])-1].name.value
+    real_t = pd.to_datetime(last_timestamp_unix)
+    print("Last timestamp" + str(real_t))
+    #Just need to check if amount of seconds is beyond a certain threshold
+    last_timestamp_threshold = last_timestamp_unix - (time_interval * 1000000000)
+    real_threshold = pd.to_datetime(last_timestamp_threshold)
+    print("Threshold is " + str(real_threshold))
+    
+    j = 0
+    for i in range(len(data_frame_test) - 1, 0, -1):
+        #Check if the timestamp is out of the last timestamp's range. In that case, stop
+        #inserting new values into the DB.
         #row is a list!
-        row = data_frame_test.iloc[i]
         #loss = row[0]
         #threshold=row[1]
         #anomaly=row[2]r
-        #print(row)
-        timestamp= row.name.value #Unix formatting
+        row = data_frame_test.iloc[i]
+        timestamp_unix = row.name.value #Unix formatting
+        
+        threshold_current = pd.to_datetime(timestamp_unix)
+        print(threshold_current)
+        
+        if (timestamp_unix <= last_timestamp_threshold):
+            print("Stopping insertion into DB")
+            break
+        
+        #print("Inserting value")
+        j = j + 1
         #Access the different row values with increasing indices
         #Apart from the timestamp, which is the row's index --> Needs to be access via ".name"
-        command = """curl -d "{} distance={},threshold={},anomaly={} {}" -X POST http://{}:{}/write?db=mydb""".format(str(table_name), str(row[0]), str(row[1]), str(row[2]), str(timestamp), str(influx_ip), str(influx_port))
+        command = """curl -d "{} distance={},threshold={},anomaly={} {}" -X POST http://{}:{}/write?db=mydb""".format(str(table_name), str(row[0]), str(row[1]), str(row[2]), str(timestamp_unix), str(influx_ip), str(influx_port))
         #print(command)
         os.system(command)
+            
+    print("Inserted " + str(j) + " data points into DB")
         
         
 #X_data can be either: X_train or X_test

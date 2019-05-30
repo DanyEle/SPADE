@@ -154,10 +154,3 @@ def autoencoder_find_anomaly_threshold(X_data):
     anomaly_threshold = find_loss_threshold_value(X_data, trained_model, extreme=False) #extreme=False
     
     return anomaly_threshold, trained_model, history
-        
-    
-    
-    
-    
-    
-    

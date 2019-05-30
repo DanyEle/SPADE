@@ -100,13 +100,13 @@ def parse_timestamps_column(column_ts):
 def insert_data_frame_into_influx(data_frame_test, influx_ip, influx_port, table_name, time_interval):
     print("Inserting data into table [" + str(table_name) + "] at " + str(influx_ip) + ":" + str(influx_port) + "...")
     #Most recent timestamp
-    last_timestamp_unix = data_frame_test.iloc[len(data_frame_test["Threshold"])-1].name.value
-    real_t = pd.to_datetime(last_timestamp_unix)
-    print("Last timestamp" + str(real_t))
+    last_timestamp_unix = data_frame_test.iloc[len(data_frame_test)-1].name.value
+    #real_t = pd.to_datetime(last_timestamp_unix)
+    #print("Last timestamp" + str(real_t))
     #Just need to check if amount of seconds is beyond a certain threshold
     last_timestamp_threshold = last_timestamp_unix - (time_interval * 1000000000)
-    real_threshold = pd.to_datetime(last_timestamp_threshold)
-    print("Threshold is " + str(real_threshold))
+    #real_threshold = pd.to_datetime(last_timestamp_threshold)
+    #print("Threshold is " + str(real_threshold))
     
     j = 0
     for i in range(len(data_frame_test) - 1, 0, -1):
@@ -119,8 +119,8 @@ def insert_data_frame_into_influx(data_frame_test, influx_ip, influx_port, table
         row = data_frame_test.iloc[i]
         timestamp_unix = row.name.value #Unix formatting
         
-        threshold_current = pd.to_datetime(timestamp_unix)
-        print(threshold_current)
+        #threshold_current = pd.to_datetime(timestamp_unix)
+        #print(threshold_current)
         
         if (timestamp_unix <= last_timestamp_threshold):
             print("Stopping insertion into DB")

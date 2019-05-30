@@ -15,13 +15,29 @@ INFLUX_PORT = 8086
 INFLUX_INSERT_HOST = "146.48.82.129"
 INFLUX_INSER_PORT = 8086
 
+
+#Input: a column of either X,Y,Z values
+#Output: the column with values containing cur_value - next_value in that axis.
+def get_axis_difference(column_values):
+    return ([abs(x - column_values[i - 1]) for i, x in enumerate(column_values)][1:])
+
+
     
 def preprocess_BB_data(data_frame_loaded, shuffle=True):
-    scaler = preprocessing.MinMaxScaler()
+    #need to get the difference between a value and the one following it, axis-wise
+    data_frame_diff = pd.DataFrame(columns=['X', 'Y', 'Z'])    
+    data_frame_diff["X"] = get_axis_difference(data_frame_loaded["X"])
+    data_frame_diff["Y"] = get_axis_difference(data_frame_loaded["Y"])
+    data_frame_diff["Z"] = get_axis_difference(data_frame_loaded["Z"])
 
-    X_data = pd.DataFrame(scaler.fit_transform(data_frame_loaded),
-                           columns=data_frame_loaded.columns,
-                           index=data_frame_loaded.index) 
+    data_frame_diff.index = data_frame_loaded[1:].index
+
+    
+    
+    scaler = preprocessing.MinMaxScaler()
+    X_data = pd.DataFrame(scaler.fit_transform(data_frame_diff),
+                           columns=data_frame_diff.columns,
+                           index=data_frame_diff.index) 
     #Randomly shuffle the data
     if(shuffle == True):
         X_data.sample(frac=1)

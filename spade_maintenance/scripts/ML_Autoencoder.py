@@ -151,7 +151,7 @@ def autoencoder_find_anomaly_threshold(X_data):
     autoencoder_model = create_autoencoder(X_data)
     trained_model, history = train_model(autoencoder_model, X_data, batch_size=32, num_epochs=100, valid_split=0.05) #0.05
     #extreme=False --> 95% of data considered. extreme=True --> 99% of data considered.
-    anomaly_threshold = find_loss_threshold_value(X_data, trained_model, extreme=False)
+    anomaly_threshold = find_loss_threshold_value(X_data, trained_model, extreme=False) #extreme=False
     
     return anomaly_threshold, trained_model, history
         

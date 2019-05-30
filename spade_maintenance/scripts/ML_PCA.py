@@ -83,7 +83,7 @@ def find_anomaly_threshold_PCA(data_train, mean_distr):
     #calculate the Mahalanobis distance for the training data defining “normal conditions”,
     #and find the threshold value to flag datapoints as an anomaly.
     dist_data = MahalanobisDist(inv_cov_matrix, mean_distr, data_train, verbose=False)
-    anomaly_threshold = MD_threshold(dist_data, extreme=True)
+    anomaly_threshold = MD_threshold(dist_data, extreme=True) #extreme=True
     
     return anomaly_threshold, dist_data, inv_cov_matrix
 

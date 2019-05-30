@@ -13,12 +13,16 @@ import requests
 tl = Timeloop()
 
 #Autoencoder loop interval
-LOOP_INTERVAL_INFERENCE_AUTO=5 #seconds
-LOOP_INTERVAL_TRAIN_MODEL_AUTO=120 #seconds
+LOOP_INTERVAL_INFERENCE_AUTO=30 #seconds
+LOOP_INTERVAL_TRAIN_MODEL_AUTO=3000 #seconds
 
 #PCA loop interval
-LOOP_INTERVAL_INFERENCE_PCA=5 #seconds
-LOOP_INTERVAL_TRAIN_MODEL_PCA=15 #seconds
+LOOP_INTERVAL_INFERENCE_PCA=10 #seconds
+LOOP_INTERVAL_TRAIN_MODEL_PCA=120 #seconds
+
+TIME_INFERENCE_PCA=500 #get the data from the last X seconds
+TIME_TRAIN_MODEL_PCA=120 #get the data from the last X seconds
+
 
 #Make sure LOOP_INTERVAL_INFERENCE_PCA > LOOP_INTERVAL_TRAIN_MODEL_PCA
 
@@ -33,7 +37,6 @@ INFLUX_PORT_PROCESSED = "8086"
 
 INFLUX_TABLE_PROCESSED_AUTO = "autoencoder" #Name of the table into which we insert the processed data from the autoencoder.
 INFLUX_TABLE_PROCESSED_PCA = "PCA" #Name of the table into which we insert the processed data from the PCA 
-
 
 #####GLOBAL VARIABLES FOR AUTOENCODERS#####
 
@@ -65,9 +68,9 @@ def train_autoencoder_BB():
     anomaly_threshold, trained_model, history = autoencoder_find_anomaly_threshold(X_train)
     print("Trained Autoencoder model")
     #Debug: Let's see how the loss function evolved during the training process.
-    #show_training_history_loss_plot(history)   
+    show_training_history_loss_plot(history)   
     #Debug: And let's see where a good threshold may lie at by inspecting the loss of the training set. 
-    #show_loss_distr_training_set(X_train, trained_model)
+    show_loss_distr_training_set(X_train, trained_model)
     #Update global variable.
     if(anomaly_threshold == False):
         print("No outliers have been identified in the sample provided")
@@ -77,7 +80,7 @@ def train_autoencoder_BB():
     
     data_frame_train_anomalies = mark_data_frame_as_anomaly(X_train, trained_model, anomaly_threshold)
     #Debug - plot
-    #data_frame_train_anomalies.plot(logy=True,  figsize = (10,6), ylim = [1e-2,1e2], color = ['blue','red'])   
+    data_frame_train_anomalies.plot(logy=True,  figsize = (10,6), ylim = [1e-2,1e2], color = ['blue','red'])   
     ###Finally, update the global variables 
     global G_anom_threshold_AUTO
     global G_trained_model_AUTO
@@ -106,14 +109,10 @@ def test_autoencoder_BB():
     #And display all the concatenated values
     
     anomaly_threshold = data_frame_conc["Anomaly"][0]
-    print("Anomaly threshold in the Autoencoder inference phase" + str(G_anom_threshold_AUTO))
+    print("Anomaly threshold in the Autoencoder inference phase [" + str(G_anom_threshold_AUTO) + " ]")
     #Debug plot - Just the current data
-    #data_frame_test.plot(logy=False,  figsize = (10,6),  color = ['blue','red'])   
+    data_frame_test.plot(logy=False,  figsize = (10,6),  color = ['blue','red'])   
     new_indices = np.arange(0, len(data_frame_conc))
-    data_frame_new_indexes = data_frame_conc
-    data_frame_new_indexes.index = new_indices
-    #Debug plot - displau both the current training data and the test data
-    #data_frame_new_indexes.plot(logy=False,  figsize = (10,6), color = ['blue','red'])   
 
     #TODO: insert the data of data_frame_test into influxDB, where it will be displayed by Grafana
     insert_data_frame_into_influx(data_frame_test, INFLUX_IP_PROCESSED, INFLUX_PORT_PROCESSED, INFLUX_TABLE_PROCESSED_AUTO)
@@ -121,7 +120,7 @@ def test_autoencoder_BB():
         
     
 def train_PCA_BB():
-    data_frame_train = get_data_frame_from_BB(INFLUX_IP_RAW_DATA, INFLUX_PORT_RAW_DATA, INFLUX_TABLE_RAW_DATA, LOOP_INTERVAL_TRAIN_MODEL_AUTO)
+    data_frame_train = get_data_frame_from_BB(INFLUX_IP_RAW_DATA, INFLUX_PORT_RAW_DATA, INFLUX_TABLE_RAW_DATA, TIME_TRAIN_MODEL_PCA)
     #X_train, X_test = train_test_split(data_frame_train, test_size=0.6)
     X_train_PCA = preprocess_BB_data(data_frame_train, shuffle=True)  #X_train
     X_train_PCA, pca_model = fit_train_data_pca(X_train_PCA) #X_train_PCA
@@ -132,9 +131,9 @@ def train_PCA_BB():
     anomaly_threshold_train, dist_train, inv_cov_matrix = find_anomaly_threshold_PCA(data_train, mean_distr)
     #Visualize the mahalanobis distance computed over the training data.
     #Debug plot
-    #plot_mahab_distance_square(dist_train)
+    plot_mahab_distance_square(dist_train)
     #Debug plot
-    #plot_mahab_distance(dist_train)
+    plot_mahab_distance(dist_train)
     print("Trained PCA Model")
     print("Mahalanobis distance threshold identified: " + str(anomaly_threshold_train))    
     #Save into GLOBAL VARIABLES the current state   
@@ -153,7 +152,7 @@ def train_PCA_BB():
     
 def test_PCA_BB():
     #Example: over here, we would actually need to get the data obtained in a small time frame.
-    data_frame_test = get_data_frame_from_BB(INFLUX_IP_RAW_DATA, INFLUX_PORT_RAW_DATA, INFLUX_TABLE_RAW_DATA, LOOP_INTERVAL_INFERENCE_PCA)
+    data_frame_test = get_data_frame_from_BB(INFLUX_IP_RAW_DATA, INFLUX_PORT_RAW_DATA, INFLUX_TABLE_RAW_DATA, TIME_INFERENCE_PCA)
     #First thing first, need to pre-process the data
     X_test = preprocess_BB_data(data_frame_test, shuffle=False) #X_test
     X_test_PCA = transform_test_data_PCA(X_test, pca=G_model_PCA)
@@ -164,7 +163,7 @@ def test_PCA_BB():
     #plot_mahab_distance_square(dist_test)
     #Visualize the mahalanobis distance itself
     #Debug plot
-    #plot_mahab_distance(dist_test)
+    plot_mahab_distance(dist_test)
     #Just plot the test dataset
     anomaly_test_PCA = pd.DataFrame()
     anomaly_test_PCA['Mob dist'] = dist_test #Distance of the test dataset from the training one. 
@@ -174,7 +173,7 @@ def test_PCA_BB():
     anomaly_test_PCA['Anomaly'] = anomaly_test_PCA['Mob dist'] > anomaly_test_PCA['Thresh']
     anomaly_test_PCA.index = X_test_PCA.index
     #Debug plot
-    #plot_anomaly = anomaly_test_PCA.plot(logy=True, figsize = (10,6), ylim = [1e-1,1e3], color = ['green','red'])
+    plot_anomaly = anomaly_test_PCA.plot(logy=True, figsize = (10,6), ylim = [1e-1,1e3], color = ['green','red'])
     #anom_test_new = anomaly_test_PCA
     #Alternative non-scaled representation
     #new_indices = np.arange(0, len(anomaly_test_PCA))
@@ -201,18 +200,18 @@ def test_PCA_model_regularly():
     if(G_model_PCA != None):
         print("Using PCA Model for inference...")
         test_PCA_BB()
-        
-            
-@tl.job(interval=timedelta(seconds=LOOP_INTERVAL_TRAIN_MODEL_AUTO))
-def train_autoencoder_model_regularly():
-    print("Training Autoencoder model...")
-    train_autoencoder_BB()
-    
-@tl.job(interval=timedelta(seconds=LOOP_INTERVAL_INFERENCE_AUTO))
-def test_autoencoder_model_regularly():
-    if(G_trained_model_AUTO != None):
-        print("Using Autoencoder model for inference...")
-        test_autoencoder_BB()
+#        
+#            
+#@tl.job(interval=timedelta(seconds=LOOP_INTERVAL_TRAIN_MODEL_AUTO))
+#def train_autoencoder_model_regularly():
+#    print("Training Autoencoder model...")
+#    train_autoencoder_BB()
+#    
+#@tl.job(interval=timedelta(seconds=LOOP_INTERVAL_INFERENCE_AUTO))
+#def test_autoencoder_model_regularly():
+#    if(G_trained_model_AUTO != None):
+#        print("Using Autoencoder model for inference...")
+#        test_autoencoder_BB()
     
 
 

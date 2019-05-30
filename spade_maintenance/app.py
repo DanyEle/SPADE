@@ -14,12 +14,11 @@ tl = Timeloop()
 
 #Autoencoder loop interval
 LOOP_INTERVAL_INFERENCE_AUTO=5 #seconds
-LOOP_INTERVAL_TRAIN_MODEL_AUTO=15 #seconds
-
+LOOP_INTERVAL_TRAIN_MODEL_AUTO=120 #seconds
 
 #PCA loop interval
 LOOP_INTERVAL_INFERENCE_PCA=5 #seconds
-LOOP_INTERVAL_TRAIN_MODEL_PCA=10 #seconds
+LOOP_INTERVAL_TRAIN_MODEL_PCA=15 #seconds
 
 #Make sure LOOP_INTERVAL_INFERENCE_PCA > LOOP_INTERVAL_TRAIN_MODEL_PCA
 
@@ -40,6 +39,7 @@ INFLUX_TABLE_PROCESSED_PCA = "PCA" #Name of the table into which we insert the p
 
 global G_anom_threshold_AUTO #= 0
 global G_trained_model_AUTO #= None
+G_trained_model_AUTO = None
 global G_autoenc_data_frame_AUTO #= pd.DataFrame()
 
 #####GLOBAL VARIABLES FOR PCA#######
@@ -48,6 +48,7 @@ global G_dist_train_PCA
 global G_anom_threshold_PCA 
 global G_inv_cov_matrix_PCA 
 global G_model_PCA
+G_model_PCA = None
 global G_mean_distr_PCA
 
 #Input: None
@@ -55,7 +56,7 @@ global G_mean_distr_PCA
 #the data frame marked with anomalous values and the anomalous threshold
 #are saved in global variables, respectively
 def train_autoencoder_BB():
-    data_frame_train = get_data_frame_from_BB(INFLUX_IP_RAW_DATA, INFLUX_PORT_RAW_DATA, "accelerometer")  
+    data_frame_train = get_data_frame_from_BB(INFLUX_IP_RAW_DATA, INFLUX_PORT_RAW_DATA, INFLUX_TABLE_RAW_DATA, LOOP_INTERVAL_TRAIN_MODEL_AUTO)  
     #let's try to visualize the data got from the beagle
     #X_train, X_test = train_test_split(data_frame_train, test_size=0.2)
     #STEADY STATE
@@ -92,7 +93,7 @@ def train_autoencoder_BB():
 #anomalous behaviour.
 def test_autoencoder_BB():
     #Example: over here, we would just need to get the data obtained every in the last 15 minutes. 
-    data_frame_test = get_data_frame_from_BB(INFLUX_IP_RAW_DATA, INFLUX_PORT_RAW_DATA, INFLUX_TABLE_RAW_DATA) #LOOP_INTERVAL_INFERENCE_AUTO as last argument
+    data_frame_test = get_data_frame_from_BB(INFLUX_IP_RAW_DATA, INFLUX_PORT_RAW_DATA, INFLUX_TABLE_RAW_DATA, LOOP_INTERVAL_INFERENCE_AUTO) 
     
     X_test = preprocess_BB_data(data_frame_test)  #data_frame_test to get all the data
     
@@ -120,7 +121,7 @@ def test_autoencoder_BB():
         
     
 def train_PCA_BB():
-    data_frame_train = get_data_frame_from_BB(INFLUX_IP_RAW_DATA, INFLUX_PORT_RAW_DATA, INFLUX_TABLE_RAW_DATA)
+    data_frame_train = get_data_frame_from_BB(INFLUX_IP_RAW_DATA, INFLUX_PORT_RAW_DATA, INFLUX_TABLE_RAW_DATA, LOOP_INTERVAL_TRAIN_MODEL_AUTO)
     #X_train, X_test = train_test_split(data_frame_train, test_size=0.6)
     X_train_PCA = preprocess_BB_data(data_frame_train, shuffle=True)  #X_train
     X_train_PCA, pca_model = fit_train_data_pca(X_train_PCA) #X_train_PCA
@@ -152,7 +153,7 @@ def train_PCA_BB():
     
 def test_PCA_BB():
     #Example: over here, we would actually need to get the data obtained in a small time frame.
-    data_frame_test = get_data_frame_from_BB(INFLUX_IP_RAW_DATA, INFLUX_PORT_RAW_DATA, INFLUX_TABLE_RAW_DATA) #LOOP_INTERVAL_INFERENCE_PCA
+    data_frame_test = get_data_frame_from_BB(INFLUX_IP_RAW_DATA, INFLUX_PORT_RAW_DATA, INFLUX_TABLE_RAW_DATA, LOOP_INTERVAL_INFERENCE_PCA)
     #First thing first, need to pre-process the data
     X_test = preprocess_BB_data(data_frame_test, shuffle=False) #X_test
     X_test_PCA = transform_test_data_PCA(X_test, pca=G_model_PCA)
@@ -188,13 +189,13 @@ def test_PCA_BB():
 
 ###########MAIN###########
 
-#@tl.job(interval=timedelta(seconds=LOOP_INTERVAL_TRAIN_MODEL_PCA))
+@tl.job(interval=timedelta(seconds=LOOP_INTERVAL_TRAIN_MODEL_PCA))
 def train_PCA_model_regularly():
     #Train PCA model and populate the global variables...
     print("Training PCA Model...")
     train_PCA_BB()
     
-#@tl.job(interval=timedelta(seconds=LOOP_INTERVAL_INFERENCE_PCA))
+@tl.job(interval=timedelta(seconds=LOOP_INTERVAL_INFERENCE_PCA))
 def test_PCA_model_regularly():
     #If we have already trained a model, then we are able to use it for inference...
     if(G_model_PCA != None):
@@ -213,15 +214,10 @@ def test_autoencoder_model_regularly():
         print("Using Autoencoder model for inference...")
         test_autoencoder_BB()
     
-    
 
 
 if __name__ == "__main__":
     #Start regular jobs...
     tl.start(block=True)    
-
-
-
-
 
 

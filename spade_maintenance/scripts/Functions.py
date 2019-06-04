@@ -23,17 +23,29 @@ def get_axis_difference(column_values):
     
 def preprocess_BB_data(data_frame_loaded, shuffle=True):
     #need to get the difference between a value and the one following it, axis-wise (a delta)
+    data_frame_adj = pd.DataFrame(columns=['X', 'Y', 'Z'])    
+
+    data_frame_adj["X"] = (data_frame_loaded["X"] + 2000) / 4000
+    data_frame_adj["Y"] = (data_frame_loaded["Y"] + 2000) / 4000
+    data_frame_adj["Z"] = (data_frame_loaded["Z"] + 2000) / 4000
+    
     data_frame_diff = pd.DataFrame(columns=['X', 'Y', 'Z'])    
-    data_frame_diff["X"] = get_axis_difference(data_frame_loaded["X"])
-    data_frame_diff["Y"] = get_axis_difference(data_frame_loaded["Y"])
-    data_frame_diff["Z"] = get_axis_difference(data_frame_loaded["Z"])
+    
+    data_frame_diff["X"] = get_axis_difference(data_frame_adj["X"])
+    data_frame_diff["Y"] = get_axis_difference(data_frame_adj["Y"])
+    data_frame_diff["Z"] = get_axis_difference(data_frame_adj["Z"])
+    
 
-    data_frame_diff.index = data_frame_loaded[1:].index
-
-    scaler = preprocessing.MinMaxScaler()
-    X_data = pd.DataFrame(scaler.fit_transform(data_frame_diff),
+    data_frame_diff.index = data_frame_loaded[1:].index #[1:]
+    #scaler = preprocessing.MinMaxScaler()
+    
+    X_data = pd.DataFrame(data_frame_diff,
                            columns=data_frame_diff.columns,
                            index=data_frame_diff.index) 
+    
+#    X_data = pd.DataFrame(scaler.fit_transform(data_frame_diff),
+#                           columns=data_frame_diff.columns,
+#                           index=data_frame_diff.index) 
     #Randomly shuffle the data
     if(shuffle == True):
         X_data.sample(frac=1)

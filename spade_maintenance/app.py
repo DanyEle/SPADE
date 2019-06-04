@@ -13,31 +13,29 @@ import requests
 tl = Timeloop()
 
 #Autoencoder loop interval
-LOOP_INTERVAL_INFERENCE_AUTO=10 #seconds
-LOOP_INTERVAL_TRAIN_MODEL_AUTO=30 #seconds
+LOOP_INTERVAL_INFERENCE_AUTO=10 #10 seconds
+LOOP_INTERVAL_TRAIN_MODEL_AUTO=120 #120 #seconds
 
 
-TIME_INFERENCE_AUTO=600
+TIME_INFERENCE_AUTO=300 #was 300/600
 TIME_TRAIN_MODEL_AUTO=120
 
-
 #PCA loop interval
-LOOP_INTERVAL_INFERENCE_PCA=10 #seconds
-LOOP_INTERVAL_TRAIN_MODEL_PCA=30 #seconds
+LOOP_INTERVAL_INFERENCE_PCA=10 #10 seconds
+LOOP_INTERVAL_TRAIN_MODEL_PCA=120 #120 #seconds
 
-TIME_INFERENCE_PCA=600 #get the data from the last X seconds
-TIME_TRAIN_MODEL_PCA=120 #get the data from the last X seconds
-
+TIME_INFERENCE_PCA=300 #was 300/600. get the data from the last X seconds
+TIME_TRAIN_MODEL_PCA=120 #get the data from the last X seconds (120)
 
 #Make sure LOOP_INTERVAL_INFERENCE_PCA > LOOP_INTERVAL_TRAIN_MODEL_PCA
 
 #IP and port of the host where the raw data is taken from
-INFLUX_IP_RAW_DATA = "146.48.82.129" #Must be string
+INFLUX_IP_RAW_DATA = "192.168.1.192" #146.48.82.129
 INFLUX_PORT_RAW_DATA = "8086" #Must be string
 INFLUX_TABLE_RAW_DATA = "accelerometer"
 
 #IP and port of the host where the processed data is stored.
-INFLUX_IP_PROCESSED = "146.48.82.129"
+INFLUX_IP_PROCESSED = "192.168.1.192" #146.48.82.129
 INFLUX_PORT_PROCESSED = "8086"
 
 INFLUX_TABLE_PROCESSED_AUTO = "autoencoder" #Name of the table into which we insert the processed data from the autoencoder.

@@ -4,21 +4,21 @@ Sensing, Processing and Analyzing Data in an Embedded IoT device
 
 ♠  
 
-**Wireless Networks of Embedded Systems Academic Year 2018-2019** 
+# Wireless Networks of Embedded Systems Academic Year 2018-2019
 
-**2nd Semester** 
+## 2nd Semester
 
-**Scuola Superiore Sant’Anna** 
+## Scuola Superiore Sant’Anna
 
 ![](Progetto%20SPADE\_2.0.001.png)
 
-**Project Proposal** 
+### Project Proposal
 
-**Project members**: Daniele Gadler, Edoardo Baldini, Francesco Tosoni **Lecturers**: Dr. Paolo Pagano, Dr. Claudio Salvadori 
+### Project members: Daniele Gadler, Edoardo Baldini, Francesco Tosoni **Lecturers**: Dr. Paolo Pagano, Dr. Claudio Salvadori 
 
-**Project Supervisor:** Dr. Claudio Salvadori 
+### Project Supervisor: Dr. Claudio Salvadori 
 
-**1.Impact** 
+# 1.Impact
 
 Traditionally maintenance in industries has been mainly conducted at regular intervals, for example to replace a module that is expected to be nearing the end of its service life based on empirical values. Another option is to simply wait for a failure to occur and then replace the malfunctioning components. Sudden failures are the worst case scenario in large plants. Maintenance measures are thus aimed at preventing such failures from happening in the first place.  
 
@@ -107,9 +107,11 @@ Technical setup:
 
 Requirements: Python3.6 or Python3.7
 
+```
 cd space_maintenance
 pip3 install -r requirements.txt
 python3 app.py
+```
 
 
 

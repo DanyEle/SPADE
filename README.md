@@ -1,8 +1,7 @@
-﻿SPADE 
+﻿# SPADE ♠ 
 
-Sensing, Processing and Analyzing Data in an Embedded IoT device
+##Sensing, Processing and Analyzing Data in an Embedded IoT device
 
-♠  
 
 # Wireless Networks of Embedded Systems 
 

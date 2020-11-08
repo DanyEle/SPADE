@@ -1,6 +1,6 @@
 ﻿# SPADE ♠ 
 
-##Sensing, Processing and Analyzing Data in an Embedded IoT device
+## Sensing, Processing and Analyzing Data in an Embedded IoT device
 
 
 # Wireless Networks of Embedded Systems 
@@ -19,7 +19,7 @@
 
 ### Project Supervisor: Dr. Claudio Salvadori 
 
-# 1.Impact
+# 1. Impact
 
 Traditionally maintenance in industries has been mainly conducted at regular intervals, for example to replace a module that is expected to be nearing the end of its service life based on empirical values. Another option is to simply wait for a failure to occur and then replace the malfunctioning components. Sudden failures are the worst case scenario in large plants. Maintenance measures are thus aimed at preventing such failures from happening in the first place.  
 
@@ -87,7 +87,7 @@ The data acquired by the remote device will be wrapped in JSON format through th
 
 The Human-Computer Interface will be a graphical interface, available in the form of a web service. By this means, users will be able to visualize the data collected and analyzed by the AI algorithms in a user-friendly fashion using an ordinary web browser (e.g., Google Chrome or Firefox).
 
-# 3.Workplan
+# 3. Workplan
 
 ![](Progetto%20SPADE\_2.0.005.png)
 

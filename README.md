@@ -90,15 +90,18 @@ The Human-Computer Interface will be a graphical interface, available in the for
 
 ![](Progetto%20SPADE\_2.0.005.png)
 
-**4. Videoshowcase**
+**4. Video showcase**
 
 Experimental evaluation:
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/Nml7jAa5LMw" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[![SPADE Experimental evaluation](http://img.youtube.com/vi/Nml7jAa5LMw/0.jpg)](https://www.youtube.com/watch?v=Nml7jAa5LMw "SPADE experimental evaluation")
+
 
 Technical setup:
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/7xbblqezW6s" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+[![SPADE project setup](http://img.youtube.com/vi/7xbblqezW6s/0.jpg)](https://www.youtube.com/watch?v=7xbblqezW6s "SPADE project setup")
+
 
 **5. Installation and running**
 

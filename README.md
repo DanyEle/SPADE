@@ -15,7 +15,9 @@
 
 ### Project Proposal
 
-### Project members: Daniele Gadler, Edoardo Baldini, Francesco Tosoni **Lecturers**: Dr. Paolo Pagano, Dr. Claudio Salvadori 
+### Project members: Daniele Gadler, Edoardo Baldini, Francesco Tosoni 
+
+### Lecturers: Dr. Paolo Pagano, Dr. Claudio Salvadori 
 
 ### Project Supervisor: Dr. Claudio Salvadori 
 

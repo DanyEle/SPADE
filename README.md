@@ -4,7 +4,9 @@ Sensing, Processing and Analyzing Data in an Embedded IoT device
 
 ♠  
 
-# Wireless Networks of Embedded Systems Academic Year 2018-2019
+# Wireless Networks of Embedded Systems 
+
+## Academic Year 2018-2019
 
 ## 2nd Semester
 
@@ -47,7 +49,7 @@ Like scheduled preventive maintenance can ensure that machines run smoothly most
 - **10-20% reduced waste**: Sub-optimal operations that are not detected can result in wasteful production. Raw material, energy, labor costs and machine time get wasted in such instances. Predictive maintenance systems can uncover issues that can result in waste before they arise. 
 - **10-50% new improvement opportunities uncovered**: Once data collection becomes automated, new insights on process optimization opportunities can be uncovered daily through advanced analytics. 
 
-**2. Excellence** 
+# 2. Excellence
 
 We aim at developing a tool for condition monitoring and predictive maintenance of a textile production machine based on the vibrations sensed by an accelerometer. 
 
@@ -86,11 +88,11 @@ The data acquired by the remote device will be wrapped in JSON format through th
 
 The Human-Computer Interface will be a graphical interface, available in the form of a web service. By this means, users will be able to visualize the data collected and analyzed by the AI algorithms in a user-friendly fashion using an ordinary web browser (e.g., Google Chrome or Firefox).
 
-**3.Workplan**
+# 3.Workplan
 
 ![](Progetto%20SPADE\_2.0.005.png)
 
-**4. Video showcase**
+# 4. Video showcase
 
 Experimental evaluation:
 
@@ -103,7 +105,7 @@ Technical setup:
 [![SPADE project setup](http://img.youtube.com/vi/7xbblqezW6s/0.jpg)](https://www.youtube.com/watch?v=7xbblqezW6s "SPADE project setup")
 
 
-**5. Installation and running**
+# 5. Installation and running
 
 Requirements: Python3.6 or Python3.7
 

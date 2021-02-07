@@ -111,7 +111,7 @@ Technical setup:
 Requirements: Python3.6 or Python3.7
 
 ```
-cd space_maintenance
+cd spade_maintenance
 pip3 install -r requirements.txt
 python3 app.py
 ```

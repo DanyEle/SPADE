@@ -118,9 +118,9 @@ python3 app.py
 
 # 6. Credits
 
-Project developed in collaboration and with the support of <a href="https://ngs-sensors.it/">NGS-Sensors S.r.l </a>
+Project developed in collaboration with and supported by <a href="https://ngs-sensors.it/">NGS-Sensors S.r.l </a>
 
-![NGS Logo](ngs_logo.jpg)
+<a href="https://ngs-sensors.it/">![NGS Logo](ngs_logo.jpg) </a>
 
 
 
